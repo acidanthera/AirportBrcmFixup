@@ -48,10 +48,10 @@ static const char *binList[] {
     "/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG"
 };
 
-static const char *symbolList[][3] {
-    {"_si_pmu_fvco_pllreg",     "__ZNK16AirPort_Brcm436015newVendorStringEv",       "__ZN16AirPort_Brcm436012checkBoardIdEPKc"},
-    {"_si_pmu_fvco_pllreg",     "__ZNK15AirPort_BrcmNIC15newVendorStringEv",        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc"},
-    {"_si_pmu_fvco_pllreg",     "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",    "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc"}
+static const char *symbolList[][4] {
+    {"_si_pmu_fvco_pllreg",     "__ZNK16AirPort_Brcm436015newVendorStringEv",       "__ZN16AirPort_Brcm436012checkBoardIdEPKc",  "__ZN16AirPort_Brcm43605probeEP9IOServicePi"},
+    {"_si_pmu_fvco_pllreg",     "__ZNK15AirPort_BrcmNIC15newVendorStringEv",        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" , "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi"},
+    {"_si_pmu_fvco_pllreg",     "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",    "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc", "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi"}
 };
 
 static KernelPatcher::KextInfo kextList[] {
@@ -104,6 +104,13 @@ bool BRCMFX::checkBoardId(const char *boardID)
 const OSSymbol* BRCMFX::newVendorString(void)
 {
     return OSSymbol::withCString("Apple");
+}
+
+//==============================================================================
+
+IOService* BRCMFX::probe(IOService* provider, SInt32* score )
+{
+    return nullptr;
 }
 
 //==============================================================================
@@ -229,7 +236,9 @@ static const uint8_t opcodes[] = {
     0x47, 0x3C, 0x52, 0xAA, 0x00, 0x00,
     0xE8, 0x00, 0x00, 0x00, 0x00, 0x59,
     0x48, 0x83, 0xC1, 0x08, 0x51, 0xEB,
-    0x06, 0x59, 0x5F, 0x89, 0x4F, 0x3C, 0xC3};
+    0x06, 0x59, 0x5F, 0x89, 0x4F, 0x3C,
+    0xC3
+};
 
 //==============================================================================
 
@@ -306,10 +315,24 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 
                     // In 10.12 (and probably earlier) BRCMFX::processKext is called too late, after failed attempt to start broadcom driver,
                     // so we have to try to start it again after all required patches
-                    if (getKernelVersion() <= KernelVersion::Sierra && service != nullptr && service->getState() == 0 && running_service == nullptr)
+                    if (service != nullptr && running_service == nullptr && startService(service))
                     {
-                        if (startService(service))
-                            DBGLOG("BRCMFX @ service %s successfully started", service->getName());
+                        SYSLOG("BRCMFX @ service %s successfully started", service->getName());
+                        
+                        // we have to disable probing in the future, otherwise system can try to run this service again (10.13)
+                        method_name = symbolList[i][3];
+                        method_address = patcher.solveSymbol(index, method_name);
+                        if (method_address) {
+                            DBGLOG("BRCMFX @ obtained %s", method_name);
+                            patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(probe), true);
+                            if (patcher.getError() == KernelPatcher::Error::NoError) {
+                                DBGLOG("BRCMFX @ routed %s", method_name);
+                            } else {
+                                SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            }
+                        } else {
+                            SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        }
                     }
                     break;
                 }
