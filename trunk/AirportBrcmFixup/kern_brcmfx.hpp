@@ -49,12 +49,14 @@ private:
      */
     using t_check_board_Id = bool (*)(const char *);
 
+
     
 	/**
 	 *  Hooked methods / callbacks
 	 */
     static const OSSymbol*  newVendorString(void);
     static bool             checkBoardId(const char *boardID);
+    static IOService*       probe(IOService* provider, SInt32* score );
 
     
     /**
