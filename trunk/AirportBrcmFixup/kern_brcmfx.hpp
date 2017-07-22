@@ -35,9 +35,9 @@ private:
     IOService* findService(const IORegistryPlane* plane, const char *service_name);
     
     /**
-     *  Try to run a service
+     *  Try to start a service
      */
-    bool runService(IOService* service);
+    bool startService(IOService* service);
     
 	/**
 	 *  newVendorString callback type
