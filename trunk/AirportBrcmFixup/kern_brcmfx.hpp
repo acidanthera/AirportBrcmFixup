@@ -39,6 +39,35 @@ private:
      */
     bool startService(IOService* service);
     
+    /**
+     *  Return a memory address where a "method_address" is called
+     *
+     *  @param memory           where to start searching
+     *  @param mem_size         where we should stop searching
+     *  @param method_address   absolute address of called method
+     */
+    uint8_t *findCallOpcode(mach_vm_address_t memory, size_t mem_size, mach_vm_address_t method_address);
+    
+    /**
+     *  Return a memory address of first conditional jump (jne/je)
+     *
+     *  @param memory           where to start searching
+     *  @param mem_size         where we should stop searching
+     */
+    uint8_t *findCondJumpOpcode(mach_vm_address_t memory, size_t& mem_size);
+    
+    /**
+     *  Implements patch for "Failed PCIe configuration"
+     *
+     *  @param index            loader index for patcher
+     *  @param method_name      name of method for patching
+     */
+    bool failedPCIeConfigurationPatch(size_t index, const char *method_name);
+    
+
+    
+    
+    
 	/**
 	 *  newVendorString callback type
 	 */
@@ -79,6 +108,8 @@ public:
         };
     };
     int progressState {ProcessingState::NothingReady};
+    
+    Disassembler disasm;
 };
 
 #endif /* kern_hbfx_hpp */

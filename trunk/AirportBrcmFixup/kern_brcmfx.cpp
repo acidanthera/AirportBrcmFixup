@@ -48,16 +48,19 @@ static const char *binList[] {
     "/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG"
 };
 
-static const char *symbolList[][4] {
-    {"_si_pmu_fvco_pllreg",     "__ZNK16AirPort_Brcm436015newVendorStringEv",       "__ZN16AirPort_Brcm436012checkBoardIdEPKc",  "__ZN16AirPort_Brcm43605probeEP9IOServicePi"},
-    {"_si_pmu_fvco_pllreg",     "__ZNK15AirPort_BrcmNIC15newVendorStringEv",        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" , "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi"},
-    {"_si_pmu_fvco_pllreg",     "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",    "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc", "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi"}
+static const char *symbolList[][5] {
+    {"_si_pmu_fvco_pllreg",  "__ZNK16AirPort_Brcm436015newVendorStringEv",    "__ZN16AirPort_Brcm436012checkBoardIdEPKc",
+        "__ZN16AirPort_Brcm43605startEP9IOService",    "__ZN16AirPort_Brcm43605probeEP9IOServicePi"  },
+    {"_si_pmu_fvco_pllreg",  "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,
+         "__ZN15AirPort_BrcmNIC5startEP9IOService",    "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi"   },
+    {"_si_pmu_fvco_pllreg",  "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv", "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",
+        "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService", "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi" }
 };
 
 static KernelPatcher::KextInfo kextList[] {
     { idList[0], &binList[0], 1, true, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[1], &binList[1],  1, true, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[2], &binList[2],  1, true, {}, KernelPatcher::KextInfo::Unloaded }
+    { idList[1], &binList[1], 1, true, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[2], &binList[2], 1, true, {}, KernelPatcher::KextInfo::Unloaded }
 };
 
 static const size_t kextListSize {3};
@@ -67,6 +70,12 @@ static const size_t kextListSize {3};
 
 bool BRCMFX::init()
 {
+    if (!disasm.init())
+    {
+        SYSLOG("BRCMFX @ failed to use disasm");
+        return false;
+    }
+    
     gIO80211FamilyPlane	= IORegistryEntry::makePlane( "IO80211Plane" );
     
     LiluAPI::Error error = lilu.onKextLoad(kextList, kextListSize,
@@ -88,6 +97,8 @@ bool BRCMFX::init()
 
 void BRCMFX::deinit()
 {
+    // Deinitialise disassembler
+    disasm.deinit();
 }
 
 //==============================================================================
@@ -156,13 +167,10 @@ bool BRCMFX::startService(IOService* service)
     IOService *provider = service->getProvider();
     if (provider != nullptr)
     {
-        OSString* bundle = OSDynamicCast(OSString, provider->getProperty("CFBundleIdentifier"));
-        DBGLOG("BRCMFX @ provider name = %s, bundle = %s", provider->getName(), (bundle != nullptr) ? bundle->getCStringNoCopy() : "");
-        
-        SInt32 score = 0;
-        DBGLOG("BRCMFX @ probe is called for %s with provider %s", service->getName(), provider->getName());
+        DBGLOG("BRCMFX @ service name = %s, provider name = %s", service->getName(), provider->getName());
         if (service->attach(provider))
         {
+            SInt32 score = 0;
             IOService *service_to_start = service->probe(provider, &score);
             service->detach(provider);
             IOSleep(300);
@@ -185,10 +193,172 @@ bool BRCMFX::startService(IOService* service)
             else
                 SYSLOG("BRCMFX @ service %s probe returned null", service->getName());
         }
+        else
+            SYSLOG("BRCMFX @ service %s can't be attached to provider %s", service->getName(), provider->getName());
     }
     else
         SYSLOG("BRCMFX @ service %s doesn't have provider", service->getName());
     return result;
+}
+
+//==============================================================================
+
+uint8_t *mem_uint8(const void *bigptr, uint8_t ch, size_t length)
+{
+    const uint8_t *big = (const uint8_t *)bigptr;
+    size_t n;
+    for (n = 0; n < length; n++)
+        if (big[n] == ch)
+            return const_cast<uint8_t*>(&big[n]);
+    return nullptr;
+}
+
+//==============================================================================
+
+uint8_t *BRCMFX::findCallOpcode(mach_vm_address_t memory, size_t mem_size, mach_vm_address_t method_address)
+{
+    uint8_t *curr = reinterpret_cast<uint8_t *>(memory);
+    uint8_t *off  = curr + mem_size;
+    
+    while (curr < off)
+    {
+        curr = mem_uint8(curr, 0xE8, off - curr);
+        if (!curr)
+        {
+            DBGLOG("HBFX @ findCallInstructionInMemory found no calls");
+            break;
+        }
+        
+        size_t isize = disasm.instructionSize(reinterpret_cast<mach_vm_address_t>(curr), 2);
+        if (isize == 0)
+        {
+            DBGLOG("HBFX @ disasm returned zero size insruction");
+            return nullptr;
+        }
+        
+        mach_vm_address_t diff = (method_address - reinterpret_cast<mach_vm_address_t>(curr + isize));
+        if (!memcmp(curr+1, &diff, isize-1))
+            return curr;
+        
+        curr += isize;
+    }
+    
+    return nullptr;
+}
+
+//==============================================================================
+
+uint8_t *BRCMFX::findCondJumpOpcode(mach_vm_address_t memory, size_t& mem_size)
+{
+    uint8_t *curr = reinterpret_cast<uint8_t *>(memory);
+    uint8_t *off  = curr + mem_size;
+    
+    while (curr < off)
+    {
+        size_t isize = disasm.instructionSize(reinterpret_cast<mach_vm_address_t>(curr), 2);
+        if (isize == 0)
+        {
+            DBGLOG("HBFX @ disasm returned zero size insruction");
+            mem_size = 0;
+            return nullptr;
+        }
+        
+        if (isize == 2 && (*curr == 0x74 || *curr == 0x75))
+            return curr;
+            
+        curr += isize;
+        mem_size -= isize;
+    }
+    
+    mem_size = 0;
+    return nullptr;
+}
+
+//==============================================================================
+
+bool BRCMFX::failedPCIeConfigurationPatch(size_t index, const char *method_name)
+{
+    auto method_address = callbackPatcher->solveSymbol(index, method_name);
+    if (!method_address)
+    {
+        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+        return false;
+    }
+    
+    auto osl_printf = callbackPatcher->solveSymbol(index, "_osl_printf");
+    if (!osl_printf)
+    {
+        SYSLOG("BRCMFX @ failed to resolve _osl_printf");
+        return false;
+    }
+    
+    uint8_t *opcodes = findCallOpcode(method_address, 1024, osl_printf);
+    if (!opcodes)
+    {
+        SYSLOG("BRCMFX @ cannot find call of method _osl_printf in %s", method_name);
+        return false;
+    }
+    
+    size_t skip_size = disasm.instructionSize(reinterpret_cast<mach_vm_address_t>(opcodes), 2);
+    if (skip_size == 0)
+    {
+        SYSLOG("BRCMFX @ disasm returned zero size insruction");
+        return false;
+    }
+    
+    opcodes += skip_size;   // skip _osl_printf call
+    DBGLOG("BRCMFX @ _osl_printf call skipped: %zu bytes", skip_size);
+    skip_size = disasm.instructionSize(reinterpret_cast<mach_vm_address_t>(opcodes), 2);
+    if (skip_size == 0)
+    {
+        SYSLOG("BRCMFX @ disasm returned zero size insruction");
+        return false;
+    }
+    
+    if (skip_size == 5 && *opcodes == 0xE9) // skip jump
+    {
+        opcodes += skip_size;
+        DBGLOG("BRCMFX @ jump skipped: %zu bytes", skip_size);
+    }
+    
+    size_t bytes_left = 50;
+    size_t jump_count = 0;
+    uint8_t *cond_jump = opcodes;
+    uint8_t *jump_addr = nullptr;
+    
+    do
+    {
+        cond_jump = findCondJumpOpcode(reinterpret_cast<mach_vm_address_t>(cond_jump), bytes_left);
+        if (cond_jump)
+        {
+            uint8_t offset = cond_jump[1];
+            bytes_left -= 2;
+            cond_jump += 2;
+            uint8_t *cur_jump_addr = cond_jump + offset;
+            if (jump_addr == nullptr)
+                jump_addr = cur_jump_addr;
+            if (jump_addr != cur_jump_addr)
+                break;
+        }
+    }
+    while (bytes_left >= 2 && cond_jump && ++jump_count < 3);
+    
+    if (jump_count != 3)
+    {
+        SYSLOG("BRCMFX @ found only %zu jumps, nothing will be nopped", jump_count);
+        return false;
+    }
+    
+    DBGLOG("BRCMFX @ found all 3 conditional jumps to the same address, %ld bytes will be nopped", cond_jump - opcodes);
+    if (MachInfo::setKernelWriting(true) != KERN_SUCCESS)
+    {
+        SYSLOG("MachInfo::setKernelWriting failed");
+        return false;
+    }
+    
+    memset(opcodes, 0x90, cond_jump - opcodes);
+    MachInfo::setKernelWriting(false);
+    return true;
 }
 
 /*******************************************************************************
@@ -198,7 +368,7 @@ bool BRCMFX::startService(IOService* service)
 // https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.18/drivers/net/wireless/bcmdhd/include/bcmdevs.h#396
 // In 10.12 and earlier _si_pmu_fvco_pllreg will fail if the value stored at [rdi+0x3c] is not 0xaa52, driver won't be loaded
 // The idea behind of this assembler function (credits to vit9696):
-// - save rdi on stack 
+// - save rdi on stack
 // - save current value at [rdi+0x3c] on stack (it may be something different from 0xaa52, we will restore it later)
 // - set a field of data structure to the expected value 0xaa52
 // - call the next instruction after call (by address 11) -> it's a common way to retrieve an absolute execution pointer (rip) (0x11 in this example)
@@ -256,6 +426,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     
                     DBGLOG("BRCMFX @ found %s", idList[i]);
 
+                    // Chip identificator checking patch
                     const char *method_name = symbolList[i][0];
                     auto method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
@@ -272,6 +443,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         break;
                     }
                     
+                    // Third party device patch
                     method_name = symbolList[i][1];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
@@ -288,6 +460,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         break;
                     }
                     
+                    // White list restriction patch
                     method_name = symbolList[i][2];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
@@ -303,15 +476,20 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                         break;
                     }
+                    
+                    // Failed PCIe configuration patch
+                    if (!failedPCIeConfigurationPatch(index, symbolList[i][3]))
+                        break;
+                    DBGLOG("BRCMFX @ Patch for failed PCIe configuration has been done");
 
                     // IO80211FamilyPlane should keep a pointer to broadcom driver (even if it's not started/probed)
                     IOService* service = findService(gIO80211FamilyPlane, serviceNameList[i]);
                     // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
                     IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
                     if (service != nullptr)
-                        DBGLOG("BRCMFX @ %s IO80211FamlilyPlane: service state: %08x", serviceNameList[i], service->getState());
+                        DBGLOG("BRCMFX @ driver %s is found in IO80211FamlilyPlane", serviceNameList[i]);
                     if (running_service != nullptr)
-                        DBGLOG("BRCMFX @ %s IOServicePlane: service state: %08x", serviceNameList[i], running_service->getState());
+                        SYSLOG("BRCMFX @ %s driver is already loaded, too late to do patching", serviceNameList[i]);
 
                     // In 10.12 (and probably earlier) BRCMFX::processKext is called too late, after failed attempt to start broadcom driver,
                     // so we have to try to start it again after all required patches
@@ -320,7 +498,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ service %s successfully started", service->getName());
                         
                         // we have to disable probing in the future, otherwise system can try to run this service again (10.13)
-                        method_name = symbolList[i][3];
+                        method_name = symbolList[i][4];
                         method_address = patcher.solveSymbol(index, method_name);
                         if (method_address) {
                             DBGLOG("BRCMFX @ obtained %s", method_name);

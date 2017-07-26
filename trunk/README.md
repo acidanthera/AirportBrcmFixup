@@ -11,7 +11,8 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 
 #### Features
 - Supports AirPort_Brcm4360, AirPort_BrcmNIC and AirPort_BrcmNIC_MFG
-- Implements patch for _si_pmu_fvco_pllreg (pass chip id checking), in <=10.12 it's required for successful driver starting
+- Implements patch for chip identificator checking (0xaa52), in <=10.12 it's required for successful driver starting
+- Implements patch for "Failed PCIe configuration patch", required for some cards 
 - Implements patch for "Third Party Device" (returns vendor name "Apple")
 - Implements patch for removing of white-list check
 
