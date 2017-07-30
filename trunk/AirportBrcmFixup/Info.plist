@@ -42,6 +42,8 @@
 	<string>Copyright © 2017 lvs1974. All rights reserved.</string>
 	<key>OSBundleLibraries</key>
 	<dict>
+		<key>com.apple.iokit.IOPCIFamily</key>
+		<string>1.0.0b1</string>
 		<key>com.apple.kpi.bsd</key>
 		<string>12.0.0</string>
 		<key>com.apple.kpi.dsep</key>
