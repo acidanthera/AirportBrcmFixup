@@ -1,5 +1,5 @@
 //
-//  kern_hbfx.hpp
+//  kern_brcmfx.hpp
 //  HBFX
 //
 //  Copyright © 2017 lvs1974. All rights reserved.
@@ -9,8 +9,7 @@
 #define kern_brcmfx_hpp
 
 #include <Headers/kern_patcher.hpp>
-#include <IOKit/IOService.h>
-
+#include <IOKit/pci/IOPCIDevice.h>
 
 class BRCMFX {
 public:
@@ -40,59 +39,37 @@ private:
     bool startService(IOService* service);
     
     /**
-     *  Return a memory address where a "method_address" is called
-     *
-     *  @param memory           where to start searching
-     *  @param mem_size         where we should stop searching
-     *  @param method_address   absolute address of called method
+     *  start func type
      */
-    uint8_t *findCallOpcode(mach_vm_address_t memory, size_t mem_size, mach_vm_address_t method_address);
+    using t_start = bool (*)(IOService *, IOService *);
     
     /**
-     *  Return a memory address of first conditional jump (jne/je)
-     *
-     *  @param memory           where to start searching
-     *  @param mem_size         where we should stop searching
+     *  configRead16 func type
      */
-    uint8_t *findCondJumpOpcode(mach_vm_address_t memory, size_t& mem_size);
+    using t_config_read16 = UInt16 (*)(IOPCIDevice *, IOPCIAddressSpace, UInt8);
     
     /**
-     *  Implements patch for "Failed PCIe configuration"
-     *
-     *  @param index            loader index for patcher
-     *  @param method_name      name of method for patching
+     *  getPCIProperty func type
      */
-    bool failedPCIeConfigurationPatch(size_t index, const char *method_name);
-    
-
-    
-    
-    
-	/**
-	 *  newVendorString callback type
-	 */
-    using t_new_vendorstring = const OSSymbol* (*)(void);
-    
-    /**
-     *  board-id check func type
-     */
-    using t_check_board_Id = bool (*)(const char *);
-
-
+    //using t_get_pci_property = bool (*) (IOService*, char const*, unsigned int&);
     
 	/**
 	 *  Hooked methods / callbacks
 	 */
     static const OSSymbol*  newVendorString(void);
     static bool             checkBoardId(const char *boardID);
-    static IOService*       probe(IOService* provider, SInt32* score );
+    static IOService*       probe(IOService* provider, SInt32* score);
+    static bool             start(IOService *service, IOService* provider);
+    static UInt16           configRead16(IOPCIDevice *that, IOPCIAddressSpace bits, UInt8 offset);
+    //static bool             getPCIProperty(IOService* service, char const* name, unsigned int& value);
 
     
     /**
      *  Trampolines for original method invocations
      */
-    t_new_vendorstring      orgNewVendorString      {nullptr};
-    t_check_board_Id        orgCheckBoardId         {nullptr};
+    t_start                 orgStart                {nullptr};
+    t_config_read16         orgConfigRead16         {nullptr};
+    //t_get_pci_property      orgGetPCIProperty       {nullptr};
 
 public:
     /**
@@ -109,7 +86,16 @@ public:
     };
     int progressState {ProcessingState::NothingReady};
     
-    Disassembler disasm;
+    struct VMTOffset {
+        enum {
+            configRead16  = 0x860/8,
+            configWrite16 = 0x868/8,
+            configRead32  = 0x850/8,
+            configWrite32 = 0x858/8,
+            configRead8   = 0x870/8,
+            configWrite8  = 0x878/8,
+        };
+    };
 };
 
 #endif /* kern_hbfx_hpp */
