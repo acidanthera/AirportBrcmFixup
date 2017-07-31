@@ -4,14 +4,9 @@
 
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
-bool FakeBrcm::disable_driver = false;
-
 bool FakeBrcm::init(OSDictionary *propTable)
 {
-    DBGLOG("BRCMFX @ FakeBrcm::init() %p\n", this);
-    
-    if (disable_driver)
-        return false;
+    DBGLOG("BRCMFX @ FakeBrcm::init()");
 
     bool ret = super::init(propTable);
     if (!ret)
@@ -25,10 +20,7 @@ bool FakeBrcm::init(OSDictionary *propTable)
 
 bool FakeBrcm::start(IOService *provider)
 {
-    if (disable_driver)
-        return false;
-    
-    DBGLOG("BRCMFX @ FakeBrcm::start() %p\n", this);
+    DBGLOG("BRCMFX @ FakeBrcm::start()");
     
     if (!super::start(provider))
     {
@@ -41,21 +33,17 @@ bool FakeBrcm::start(IOService *provider)
 
 void FakeBrcm::stop(IOService *provider)
 {
-    DBGLOG("BRCMFX @ FakeBrcm::stop() %p\n", this);
+    DBGLOG("BRCMFX @ FakeBrcm::stop()");
 
     super::stop(provider);
 }
 
 void FakeBrcm::free()
 {
-    DBGLOG("BRCMFX @ FakeBrcm::free() %p\n", this);
+    DBGLOG("BRCMFX @ FakeBrcm::free()");
 
     super::free();
 }
 
-void FakeBrcm::set_disable_driver()
-{
-    disable_driver = true;
-}
 
 
