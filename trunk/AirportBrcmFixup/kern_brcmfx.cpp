@@ -98,6 +98,7 @@ void BRCMFX::deinit()
 
 bool BRCMFX::checkBoardId(const char *boardID)
 {
+    DBGLOG("BRCMFX @ checkBoardId is called");
     return true;
 }
 
@@ -105,6 +106,7 @@ bool BRCMFX::checkBoardId(const char *boardID)
 
 const OSSymbol* BRCMFX::newVendorString(void)
 {
+    DBGLOG("BRCMFX @ newVendorString is called");
     return OSSymbol::withCString("Apple");
 }
 
