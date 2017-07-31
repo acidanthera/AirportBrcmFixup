@@ -6,7 +6,6 @@
 //
 
 #include <Headers/kern_api.hpp>
-#include <Headers/kern_file.hpp>
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
@@ -50,13 +49,13 @@ static const char *binList[] {
 // NIC:  __ZN15AirPort_BrcmNIC14getPCIPropertyEP9IOServicePKcR
 // MFG:  __ZN19AirPort_BrcmNIC_MFG14getPCIPropertyEP9IOServicePKcRj
 
-static const char *symbolList[][6] {
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK16AirPort_Brcm436015newVendorStringEv",    "__ZN16AirPort_Brcm436012checkBoardIdEPKc",
-        "__ZN16AirPort_Brcm43605startEP9IOService",    "__ZN16AirPort_Brcm43605probeEP9IOServicePi"  },
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,
-         "__ZN15AirPort_BrcmNIC5startEP9IOService",    "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi"   },
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv", "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",
-        "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService", "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi" }
+static const char *symbolList[][5] {
+    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK16AirPort_Brcm436015newVendorStringEv",
+        "__ZN16AirPort_Brcm436012checkBoardIdEPKc",       "__ZN16AirPort_Brcm43605startEP9IOService"    },
+    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK15AirPort_BrcmNIC15newVendorStringEv",
+        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,       "__ZN15AirPort_BrcmNIC5startEP9IOService"     },
+    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",
+        "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",    "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService" }
 };
 
 static KernelPatcher::KextInfo kextList[] {
@@ -107,13 +106,6 @@ bool BRCMFX::checkBoardId(const char *boardID)
 const OSSymbol* BRCMFX::newVendorString(void)
 {
     return OSSymbol::withCString("Apple");
-}
-
-//==============================================================================
-
-IOService* BRCMFX::probe(IOService* provider, SInt32* score)
-{
-    return nullptr;
 }
 
 //==============================================================================
@@ -236,12 +228,19 @@ IOService* BRCMFX::findService(const IORegistryPlane* plane, const char *service
 
 //==============================================================================
 
-bool BRCMFX::startService(IOService* service)
+bool BRCMFX::startService(IOService* service, IOService* provider)
 {
     bool result = false;
-    IOService *provider = service->getProvider();
+    if (provider == nullptr)
+        provider = service->getProvider();
     if (provider != nullptr)
     {
+        if (!service->init())
+        {
+            SYSLOG("BRCMFX @ service %s can't be initialized", service->getName());
+            return false;
+        }
+        
         DBGLOG("BRCMFX @ service name = %s, provider name = %s", service->getName(), provider->getName());
         if (service->attach(provider))
         {
@@ -362,6 +361,14 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     progressState |= processingStateList[i];
                     
                     DBGLOG("BRCMFX @ found %s", idList[i]);
+                    
+                    // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
+                    IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
+                    if (running_service != nullptr)
+                    {
+                        SYSLOG("BRCMFX @ %s driver is already loaded, too late to do patching", serviceNameList[i]);
+                        break;
+                    }
 
                     // Chip identificator checking patch
                     const char *method_name = symbolList[i][0];
@@ -443,36 +450,34 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                         break;
                     }
-
-                    // IO80211FamilyPlane should keep a pointer to broadcom driver (even if it's not started/probed)
-                    IOService* service = findService(gIO80211FamilyPlane, serviceNameList[i]);
+                    
                     // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
-                    IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
+                    IOService* provider = nullptr;
+                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
                     if (service != nullptr)
-                        DBGLOG("BRCMFX @ driver %s is found in IO80211FamlilyPlane", serviceNameList[i]);
-                    if (running_service != nullptr)
-                        SYSLOG("BRCMFX @ %s driver is already loaded, too late to do patching", serviceNameList[i]);
-
-                    // In 10.12 (and probably earlier) BRCMFX::processKext is called too late, after failed attempt to start broadcom driver,
-                    // so we have to try to start it again after all required patches
-                    if (getKernelVersion() < KernelVersion::HighSierra && service != nullptr && running_service == nullptr && startService(service))
+                    {
+                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
+                        provider = service->getProvider();
+                        service->stop(provider);
+                        if (provider != nullptr && provider->isOpen(service))
+                        {
+                            provider->close(service);
+                            service->detach(provider);
+                        }
+                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
+                    }
+                    
+                    // alloc the driver instance
+                    service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
+                    if (service == nullptr)
+                    {
+                        SYSLOG("BRCMFX @ instance of driver %s couldn't be created", serviceNameList[i]);
+                        break;
+                    }
+                    
+                    if (startService(service, provider))
                     {
                         SYSLOG("BRCMFX @ service %s successfully started", service->getName());
-                        
-                        // we have to disable probing in the future, otherwise system can try to run this service again (10.13)
-                        method_name = symbolList[i][5];
-                        method_address = patcher.solveSymbol(index, method_name);
-                        if (method_address) {
-                            DBGLOG("BRCMFX @ obtained %s", method_name);
-                            patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(probe), true);
-                            if (patcher.getError() == KernelPatcher::Error::NoError) {
-                                DBGLOG("BRCMFX @ routed %s", method_name);
-                            } else {
-                                SYSLOG("BRCMFX @ failed to route %s", method_name);
-                            }
-                        } else {
-                            SYSLOG("BRCMFX @ failed to resolve %s", method_name);
-                        }
                     }
                     break;
                 }
