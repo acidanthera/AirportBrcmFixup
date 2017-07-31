@@ -36,7 +36,7 @@ private:
     /**
      *  Try to start a service
      */
-    bool startService(IOService* service);
+    bool startService(IOService* service, IOService* provider = nullptr);
     
     /**
      *  start func type
@@ -58,7 +58,6 @@ private:
 	 */
     static const OSSymbol*  newVendorString(void);
     static bool             checkBoardId(const char *boardID);
-    static IOService*       probe(IOService* provider, SInt32* score);
     static bool             start(IOService *service, IOService* provider);
     static UInt16           configRead16(IOPCIDevice *that, IOPCIAddressSpace bits, UInt8 offset);
     //static bool             getPCIProperty(IOService* service, char const* name, unsigned int& value);
@@ -88,12 +87,12 @@ public:
     
     struct VMTOffset {
         enum {
-            configRead16  = 0x860/8,
-            configWrite16 = 0x868/8,
-            configRead32  = 0x850/8,
-            configWrite32 = 0x858/8,
-            configRead8   = 0x870/8,
-            configWrite8  = 0x878/8,
+            configRead16  = 0x860/sizeof(uintptr_t),
+            configWrite16 = 0x868/sizeof(uintptr_t),
+            configRead32  = 0x850/sizeof(uintptr_t),
+            configWrite32 = 0x858/sizeof(uintptr_t),
+            configRead8   = 0x870/sizeof(uintptr_t),
+            configWrite8  = 0x878/sizeof(uintptr_t),
         };
     };
 };

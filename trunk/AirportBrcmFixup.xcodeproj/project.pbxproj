@@ -13,6 +13,8 @@
 		F67C73C61E68AD890061CB0A /* kern_config.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F67C73C51E68AD890061CB0A /* kern_config.hpp */; };
 		F6C535E81E60963800A3A34B /* kern_brcmfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */; };
 		F6C535E91E60963800A3A34B /* kern_brcmfx.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */; };
+		F6D165611F2F86090022B27D /* kern_fakebrcm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */; };
+		F6D165621F2F86090022B27D /* kern_fakebrcm.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F6D165601F2F86090022B27D /* kern_fakebrcm.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -52,6 +54,8 @@
 		F67C73C51E68AD890061CB0A /* kern_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_config.hpp; sourceTree = "<group>"; };
 		F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_brcmfx.cpp; sourceTree = "<group>"; };
 		F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_brcmfx.hpp; sourceTree = "<group>"; };
+		F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_fakebrcm.cpp; sourceTree = "<group>"; };
+		F6D165601F2F86090022B27D /* kern_fakebrcm.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_fakebrcm.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +91,8 @@
 		1C748C291C21952C0024EED2 /* AirportBrcmFixup */ = {
 			isa = PBXGroup;
 			children = (
+				F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */,
+				F6D165601F2F86090022B27D /* kern_fakebrcm.hpp */,
 				F67C73C51E68AD890061CB0A /* kern_config.hpp */,
 				F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */,
 				F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */,
@@ -154,6 +160,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F67C73C61E68AD890061CB0A /* kern_config.hpp in Headers */,
+				F6D165621F2F86090022B27D /* kern_fakebrcm.hpp in Headers */,
 				F6C535E91E60963800A3A34B /* kern_brcmfx.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -226,6 +233,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6D165611F2F86090022B27D /* kern_fakebrcm.cpp in Sources */,
 				CE405ED91E4A080700AA0B3D /* plugin_start.cpp in Sources */,
 				F6C535E81E60963800A3A34B /* kern_brcmfx.cpp in Sources */,
 				1C748C2D1C21952C0024EED2 /* kern_start.cpp in Sources */,
