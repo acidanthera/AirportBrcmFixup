@@ -51,12 +51,7 @@ private:
     /**
      *  wlc_set_countrycode func type
      */
-    using t_wlc_set_countrycode = void (*) (void *, int8_t *, int32_t);
-    
-    /**
-     *  getPCIProperty func type
-     */
-    //using t_get_pci_property = bool (*) (IOService*, char const*, unsigned int&);
+    using t_wlc_set_countrycode = void (*) (void *, int16_t *, int32_t);
     
 	/**
 	 *  Hooked methods / callbacks
@@ -65,8 +60,7 @@ private:
     static bool             checkBoardId(const char *boardID);
     static bool             start(IOService *service, IOService* provider);
     static UInt16           configRead16(IOPCIDevice *that, IOPCIAddressSpace bits, UInt8 offset);
-    static void             wlc_set_countrycode(void *, int8_t *country_code, int32_t);
-    //static bool             getPCIProperty(IOService* service, char const* name, unsigned int& value);
+    static void             wlc_set_countrycode(void *, int16_t *country_code, int32_t);
 
     
     /**
@@ -75,7 +69,6 @@ private:
     t_start                     orgStart                {nullptr};
     t_config_read16             orgConfigRead16         {nullptr};
     t_wlc_set_countrycode       orgWlcSetCounrtyCode    {nullptr};
-    //t_get_pci_property      orgGetPCIProperty       {nullptr};
 
 public:
     /**
