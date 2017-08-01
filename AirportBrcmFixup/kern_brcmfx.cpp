@@ -142,6 +142,23 @@ UInt16 BRCMFX::configRead16(IOPCIDevice *that, IOPCIAddressSpace space, UInt8 of
 }
 
 //==============================================================================
+// 23 61 means '#' 'a',  "#a" is universal for all countries
+// 55 53 -> US
+// 43 4e -> CN
+
+void BRCMFX::wlc_set_countrycode(void *arg1, int8_t *country_code, int32_t arg3)
+{
+    DBGLOG("BRCMFX @ wlc_set_countrycode is called");
+    if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCounrtyCode)
+    {
+        DBGLOG("BRCMFX @ contry code is set to %s", config.country_code);
+        country_code[0] = config.country_code[0];
+        country_code[1] = config.country_code[1];
+        callbackBRCMFX->orgWlcSetCounrtyCode(arg1, country_code, arg3);
+    }
+}
+
+//==============================================================================
 
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
@@ -326,27 +343,6 @@ static const uint8_t si_pmu_fvco_pllreg_opcodes[] = {
     0xC3
 };
 
-/*******************************************************************************
-Assembler wrapper for calling _wlc_set_countrycode_rev (Wi-Fi 5Ghz patch):
-// The idea behind of this patch: write country code value 0x6123/0x5355 to [rsi] - TODO: clarify
-00000000000000 51                     push       rcx                       // entry point, when _wlc_channel_init_ccode calls _wlc_set_countrycode_rev, we are here
-00000000000001 66C7062361             mov        word [rsi], 0x6123
-00000000000006 E800000000             call       $+5                       // calls the next instruction to retrieve rip
-0000000000000B 59                     pop        rcx                       // rcx = 0x0B (absolute address in a real life)
-0000000000000C 4883C108               add        rcx, 0x8                  // add 0x8 to get an absolute address of instruction "pop rcx"
-00000000000010 51                     push       rcx                       // push an absolute address (will be used by instruction ret later on)
-00000000000011 EB02                   jmp        $+2                       // jump to Lilu_wrapper, _wlc_set_countrycode_rev will be called
-00000000000013 59                     pop        rcx                       // we are here after return from _wlc_set_countrycode_rev performs
-00000000000014 C3                     ret                                  // return to _wlc_channel_init_ccode
-*/
- 
-static const uint8_t wlc_set_countrycode_rev_opcodes[] = {
-//    0x51, 0x66, 0xC7, 0x06, 0x23, 0x61,
-    0x51, 0x66, 0xC7, 0x06, 0x55, 0x53,
-    0xE8, 0x00, 0x00, 0x00, 0x00, 0x59,
-    0x48, 0x83, 0xC1, 0x08, 0x51, 0xEB,
-    0x02, 0x59, 0xC3
-};
 
 //==============================================================================
 
@@ -392,7 +388,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
-                        patcher.routeBlock(method_address, wlc_set_countrycode_rev_opcodes, sizeof(wlc_set_countrycode_rev_opcodes), true);
+                        orgWlcSetCounrtyCode = reinterpret_cast<t_wlc_set_countrycode>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
                         } else {
@@ -412,11 +408,9 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                             DBGLOG("BRCMFX @ routed %s", method_name);
                         } else {
                             SYSLOG("BRCMFX @ failed to route %s", method_name);
-                            break;
                         }
                     } else {
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
-                        break;
                     }
                     
                     // White list restriction patch
@@ -429,11 +423,9 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                             DBGLOG("BRCMFX @ routed %s", method_name);
                         } else {
                             SYSLOG("BRCMFX @ failed to route %s", method_name);
-                            break;
                         }
                     } else {
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
-                        break;
                     }
                     
                     // Failed PCIe configuration (device-id checking)
@@ -446,14 +438,12 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                             DBGLOG("BRCMFX @ routed %s", method_name);
                         } else {
                             SYSLOG("BRCMFX @ failed to route %s", method_name);
-                            break;
                         }
                     } else {
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
-                        break;
                     }
                     
-                    // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
+                    // IOServicePlane should keep a pointer to FakeBrcm
                     IOService* provider = nullptr;
                     IOService* service = findService(gIOServicePlane, "FakeBrcm");
                     if (service != nullptr)
@@ -469,7 +459,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
                     }
                     
-                    // alloc the driver instance
+                    // Allocate the broadcom driver instance
                     service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
                     if (service == nullptr)
                     {

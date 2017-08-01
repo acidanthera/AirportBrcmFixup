@@ -17,6 +17,7 @@ public:
     static const char *bootargOff[];
     static const char *bootargDebug[];
     static const char *bootargBeta[];
+    static constexpr const char *bootargBrcmCountry {"brcmfx-country"};   // patch pci family
     
 public:
 	/**
@@ -25,6 +26,9 @@ public:
 	 *  @return true if allowed to continue
 	 */
 	void readArguments();
+    
+    
+    char country_code[3] = {"#a"}; // default value #a
 	
 	
 #ifdef DEBUG

@@ -30,6 +30,8 @@ Configuration config;
 
 
 void Configuration::readArguments() {
+    
+    PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code));
 }
 
 
