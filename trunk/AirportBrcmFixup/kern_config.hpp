@@ -28,7 +28,7 @@ public:
 	void readArguments();
     
     
-    char country_code[3] = {"#a"}; // default value #a
+    char country_code[3] = {"US"}; // default value
     bool disabled {false};
 	
 	
