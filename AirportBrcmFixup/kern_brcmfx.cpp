@@ -146,14 +146,13 @@ UInt16 BRCMFX::configRead16(IOPCIDevice *that, IOPCIAddressSpace space, UInt8 of
 // 55 53 -> US
 // 43 4e -> CN
 
-void BRCMFX::wlc_set_countrycode(void *arg1, int8_t *country_code, int32_t arg3)
+void BRCMFX::wlc_set_countrycode(void *arg1, int16_t *country_code, int32_t arg3)
 {
     DBGLOG("BRCMFX @ wlc_set_countrycode is called");
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCounrtyCode)
     {
         DBGLOG("BRCMFX @ contry code is set to %s", config.country_code);
-        country_code[0] = config.country_code[0];
-        country_code[1] = config.country_code[1];
+        memcpy(country_code, config.country_code, sizeof(int16_t));
         callbackBRCMFX->orgWlcSetCounrtyCode(arg1, country_code, arg3);
     }
 }
@@ -183,32 +182,6 @@ bool BRCMFX::start(IOService* service, IOService* provider)
     
     return result;
 }
-
-//==============================================================================
-
-//bool BRCMFX::getPCIProperty(IOService* service, char const* name, unsigned int& value)
-//{
-//    bool result = false;
-//    if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgGetPCIProperty)
-//    {
-//        if (strcmp(name, "device-id") == 0)
-//        {
-//            IOPCIDevice* pcidev = OSDynamicCast(IOPCIDevice, service);
-//            value = pcidev->extendedConfigRead16(kIOPCIConfigDeviceID);
-//            result = true;
-//        }
-//        else if (strcmp(name, "vendor-id") == 0)
-//        {
-//            IOPCIDevice* pcidev = OSDynamicCast(IOPCIDevice, service);
-//            value = pcidev->extendedConfigRead16(kIOPCIConfigVendorID);
-//            result = true;
-//        }
-//        else
-//            result = callbackBRCMFX->orgGetPCIProperty(service, name, value);
-//    }
-//    
-//    return result;
-//}
 
 //==============================================================================
 
