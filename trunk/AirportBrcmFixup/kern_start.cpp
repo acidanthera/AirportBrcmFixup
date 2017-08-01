@@ -32,6 +32,9 @@ Configuration config;
 void Configuration::readArguments() {
     
     PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code));
+    
+    char tmp[16];
+    disabled = PE_parse_boot_argn(config.bootargOff[0], tmp, sizeof(tmp));
 }
 
 
