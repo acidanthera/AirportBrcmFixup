@@ -29,6 +29,7 @@ public:
     
     
     char country_code[3] = {"#a"}; // default value #a
+    bool disabled {false};
 	
 	
 #ifdef DEBUG
