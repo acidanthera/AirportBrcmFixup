@@ -6,14 +6,39 @@
 //
 
 #include <Headers/kern_api.hpp>
+#include <Library/LegacyIOService.h>
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
 
-#include <IOKit/IORegistryEntry.h>
-#include <IOKit/IODeviceTreeSupport.h>
-#include <IOKit/IOReportTypes.h>
-
+/* Definitions of PCI Config Registers */
+enum {
+	kIOPCIConfigVendorID                = 0x00,
+	kIOPCIConfigDeviceID                = 0x02,
+	kIOPCIConfigCommand                 = 0x04,
+	kIOPCIConfigStatus                  = 0x06,
+	kIOPCIConfigRevisionID              = 0x08,
+	kIOPCIConfigClassCode               = 0x09,
+	kIOPCIConfigCacheLineSize           = 0x0C,
+	kIOPCIConfigLatencyTimer            = 0x0D,
+	kIOPCIConfigHeaderType              = 0x0E,
+	kIOPCIConfigBIST                    = 0x0F,
+	kIOPCIConfigBaseAddress0            = 0x10,
+	kIOPCIConfigBaseAddress1            = 0x14,
+	kIOPCIConfigBaseAddress2            = 0x18,
+	kIOPCIConfigBaseAddress3            = 0x1C,
+	kIOPCIConfigBaseAddress4            = 0x20,
+	kIOPCIConfigBaseAddress5            = 0x24,
+	kIOPCIConfigCardBusCISPtr           = 0x28,
+	kIOPCIConfigSubSystemVendorID       = 0x2C,
+	kIOPCIConfigSubSystemID             = 0x2E,
+	kIOPCIConfigExpansionROMBase        = 0x30,
+	kIOPCIConfigCapabilitiesPtr         = 0x34,
+	kIOPCIConfigInterruptLine           = 0x3C,
+	kIOPCIConfigInterruptPin            = 0x3D,
+	kIOPCIConfigMinimumGrant            = 0x3E,
+	kIOPCIConfigMaximumLatency          = 0x3F
+};
 
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
@@ -59,9 +84,9 @@ static const char *symbolList[][5] {
 };
 
 static KernelPatcher::KextInfo kextList[] {
-    { idList[0], &binList[0], 1, true, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[1], &binList[1], 1, true, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[2], &binList[2], 1, true, {}, KernelPatcher::KextInfo::Unloaded }
+    { idList[0], &binList[0], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[1], &binList[1], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[2], &binList[2], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded }
 };
 
 static const size_t kextListSize {3};
@@ -112,7 +137,7 @@ const OSSymbol* BRCMFX::newVendorString(void)
 
 //==============================================================================
 
-UInt16 BRCMFX::configRead16(IOPCIDevice *that, IOPCIAddressSpace space, UInt8 offset)
+UInt16 BRCMFX::configRead16(IOService *that, UInt32 space, UInt8 offset)
 {
     auto val = callbackBRCMFX->orgConfigRead16(that, space, offset);
     

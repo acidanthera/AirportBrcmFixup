@@ -1,8 +1,7 @@
 #ifndef FakeBrcm_h
 #define FakeBrcm_h
 
-#include <IOKit/IOService.h>
-#include <IOKit/pci/IOPCIDevice.h>
+#include <Library/LegacyIOService.h>
 
 class FakeBrcm : public IOService
 {
