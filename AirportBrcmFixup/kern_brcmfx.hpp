@@ -9,7 +9,7 @@
 #define kern_brcmfx_hpp
 
 #include <Headers/kern_patcher.hpp>
-#include <IOKit/pci/IOPCIDevice.h>
+#include <Library/LegacyIOService.h>
 
 class BRCMFX {
 public:
@@ -46,7 +46,7 @@ private:
     /**
      *  configRead16 func type
      */
-    using t_config_read16 = UInt16 (*)(IOPCIDevice *, IOPCIAddressSpace, UInt8);
+    using t_config_read16 = UInt16 (*)(IOService *, UInt32, UInt8);
  
     /**
      *  wlc_set_countrycode func type
@@ -59,7 +59,7 @@ private:
     static const OSSymbol*  newVendorString(void);
     static bool             checkBoardId(const char *boardID);
     static bool             start(IOService *service, IOService* provider);
-    static UInt16           configRead16(IOPCIDevice *that, IOPCIAddressSpace bits, UInt8 offset);
+    static UInt16           configRead16(IOService *that, UInt32 bits, UInt8 offset);
     static void             wlc_set_countrycode(void *, int16_t *country_code, int32_t);
 
     

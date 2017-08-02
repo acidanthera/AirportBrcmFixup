@@ -1,5 +1,6 @@
-#include <IOKit/IOLib.h>
+#include <Library/LegacyIOService.h>
 #include <Headers/kern_api.hpp>
+
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
 
