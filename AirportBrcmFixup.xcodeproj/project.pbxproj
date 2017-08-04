@@ -10,6 +10,7 @@
 		1C748C2D1C21952C0024EED2 /* kern_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1C748C2C1C21952C0024EED2 /* kern_start.cpp */; };
 		CE405EC91E49DD9700AA0B3D /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE405EC71E49DD7100AA0B3D /* libkmod.a */; };
 		CE405ED91E4A080700AA0B3D /* plugin_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE405ED81E4A080700AA0B3D /* plugin_start.cpp */; };
+		F641B3981F33857B009B3996 /* kern_misc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F641B3971F33857B009B3996 /* kern_misc.hpp */; };
 		F67C73C61E68AD890061CB0A /* kern_config.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F67C73C51E68AD890061CB0A /* kern_config.hpp */; };
 		F6C535E81E60963800A3A34B /* kern_brcmfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */; };
 		F6C535E91E60963800A3A34B /* kern_brcmfx.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */; };
@@ -51,6 +52,7 @@
 		CE405ED21E49F9FC00AA0B3D /* kern_api.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_api.hpp; sourceTree = "<group>"; };
 		CE405ED81E4A080700AA0B3D /* plugin_start.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = plugin_start.cpp; sourceTree = "<group>"; };
 		CE405EDA1E4A080F00AA0B3D /* plugin_start.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = plugin_start.hpp; sourceTree = "<group>"; };
+		F641B3971F33857B009B3996 /* kern_misc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_misc.hpp; sourceTree = "<group>"; };
 		F67C73C51E68AD890061CB0A /* kern_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_config.hpp; sourceTree = "<group>"; };
 		F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_brcmfx.cpp; sourceTree = "<group>"; };
 		F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_brcmfx.hpp; sourceTree = "<group>"; };
@@ -91,6 +93,7 @@
 		1C748C291C21952C0024EED2 /* AirportBrcmFixup */ = {
 			isa = PBXGroup;
 			children = (
+				F641B3971F33857B009B3996 /* kern_misc.hpp */,
 				F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */,
 				F6D165601F2F86090022B27D /* kern_fakebrcm.hpp */,
 				F67C73C51E68AD890061CB0A /* kern_config.hpp */,
@@ -161,6 +164,7 @@
 			files = (
 				F67C73C61E68AD890061CB0A /* kern_config.hpp in Headers */,
 				F6D165621F2F86090022B27D /* kern_fakebrcm.hpp in Headers */,
+				F641B3981F33857B009B3996 /* kern_misc.hpp in Headers */,
 				F6C535E91E60963800A3A34B /* kern_brcmfx.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
