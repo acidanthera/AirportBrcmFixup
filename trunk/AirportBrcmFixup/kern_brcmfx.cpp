@@ -10,6 +10,8 @@
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
+#include "kern_fakebrcm.hpp"
+#include "kern_misc.hpp"
 
 /* Definitions of PCI Config Registers */
 enum {
@@ -45,51 +47,11 @@ static BRCMFX *callbackBRCMFX {nullptr};
 static KernelPatcher *callbackPatcher {nullptr};
 static const IORegistryPlane* gIO80211FamilyPlane {nullptr};
 
-
-static const char *idList[] {
-    "com.apple.driver.AirPort.Brcm4360",
-    "com.apple.driver.AirPort.BrcmNIC",
-    "com.apple.driver.AirPort.BrcmNIC-MFG"
-};
-
-static const char *serviceNameList[] {
-    "AirPort_Brcm4360",
-    "AirPort_BrcmNIC",
-    "AirPort_BrcmNIC_MFG"
-};
-
-static const int processingStateList[] {
-    BRCMFX::ProcessingState::BRCM4360Patched,
-    BRCMFX::ProcessingState::BRCMNICPatched,
-    BRCMFX::ProcessingState::BRCMNIC_MFGPatched
-};
-
-static const char *binList[] {
-    "/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4360.kext/Contents/MacOS/AirPortBrcm4360",
-    "/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcmNIC.kext/Contents/MacOS/AirPortBrcmNIC",
-    "/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG"
-};
-
-// 4360: __ZN16AirPort_Brcm436014getPCIPropertyEP9IOServicePKcRj
-// NIC:  __ZN15AirPort_BrcmNIC14getPCIPropertyEP9IOServicePKcR
-// MFG:  __ZN19AirPort_BrcmNIC_MFG14getPCIPropertyEP9IOServicePKcRj
-
-static const char *symbolList[][5] {
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK16AirPort_Brcm436015newVendorStringEv",
-        "__ZN16AirPort_Brcm436012checkBoardIdEPKc",       "__ZN16AirPort_Brcm43605startEP9IOService"    },
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK15AirPort_BrcmNIC15newVendorStringEv",
-        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,       "__ZN15AirPort_BrcmNIC5startEP9IOService"     },
-    {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",
-        "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",    "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService" }
-};
-
 static KernelPatcher::KextInfo kextList[] {
     { idList[0], &binList[0], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
     { idList[1], &binList[1], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
     { idList[2], &binList[2], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded }
 };
-
-static const size_t kextListSize {3};
 
 
 //==============================================================================
@@ -209,8 +171,10 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 }
 
 //==============================================================================
-
-IOService* BRCMFX::findService(const IORegistryPlane* plane, const char *service_name)
+//
+// Find service by name in a specified registry plane (gIO80211FamilyPlane or gIOServicePlane)
+//
+IOService* findService(const IORegistryPlane* plane, const char *service_name)
 {
     IOService            * service = 0;
     IORegistryIterator   * iter = IORegistryIterator::iterateOver(plane, kIORegistryIterateRecursively);
@@ -244,8 +208,10 @@ IOService* BRCMFX::findService(const IORegistryPlane* plane, const char *service
 }
 
 //==============================================================================
-
-bool BRCMFX::startService(IOService* service, IOService* provider)
+//
+//  Try to start a service
+//
+bool startService(IOService* service, IOService* provider)
 {
     bool result = false;
     if (provider == nullptr)
@@ -352,9 +318,9 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
         {
             if (kextList[i].loadIndex == index)
             {
-                while (!(progressState & processingStateList[i]))
+                while (!(progressState & ProcessingState::BRCMPatched))
                 {
-                    progressState |= processingStateList[i];
+                    progressState |= ProcessingState::BRCMPatched;
                     
                     DBGLOG("BRCMFX @ found %s", idList[i]);
                     
@@ -441,13 +407,12 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                     }
                     
-                    // IOServicePlane should keep a pointer to FakeBrcm
-                    IOService* provider = nullptr;
+                    // IOServicePlane should keep a pointer to FakeBrcm;
                     IOService* service = findService(gIOServicePlane, "FakeBrcm");
                     if (service != nullptr)
                     {
                         DBGLOG("BRCMFX @ stop FakeBrcm driver");
-                        provider = service->getProvider();
+                        IOService* provider = service->getProvider();
                         service->stop(provider);
                         if (provider != nullptr && provider->isOpen(service))
                         {
@@ -457,17 +422,17 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
                     }
                     
-                    // Allocate the broadcom driver instance
-                    service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
+                    
+                    service = FakeBrcm::getService(serviceNameList[i]);
                     if (service == nullptr)
                     {
-                        SYSLOG("BRCMFX @ instance of driver %s couldn't be created", serviceNameList[i]);
+                        SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
                         break;
                     }
-                    
-                    if (startService(service, provider))
+
+                    if (startService(service, FakeBrcm::getServiceProvider()))
                     {
-                        SYSLOG("BRCMFX @ service %s successfully started", service->getName());
+                        SYSLOG("BRCMFX @ service %s successfully started, retain counter = %d", service->getName(), service->getRetainCount());
                     }
                     break;
                 }

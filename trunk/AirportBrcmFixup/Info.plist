@@ -56,7 +56,7 @@
 				<string>pci14e4,432d</string>
 			</array>
 			<key>IOProbeScore</key>
-			<integer>1300</integer>
+			<integer>100</integer>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>TruePowerOff</key>
@@ -82,6 +82,10 @@
 	<string>1.0</string>
 	<key>OSBundleLibraries</key>
 	<dict>
+		<key>com.apple.iokit.IO80211Family</key>
+		<string>600.0</string>
+		<key>com.apple.iokit.IONetworkingFamily</key>
+		<string>3.1</string>
 		<key>as.vit9696.Lilu</key>
 		<string>1.1.6</string>
 		<key>com.apple.iokit.IOPCIFamily</key>
@@ -100,6 +104,6 @@
 		<string>12.0.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
-	<string>Root</string>
+	<string>Network-Root</string>
 </dict>
 </plist>

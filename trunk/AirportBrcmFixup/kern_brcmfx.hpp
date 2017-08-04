@@ -11,6 +11,7 @@
 #include <Headers/kern_patcher.hpp>
 #include <Library/LegacyIOService.h>
 
+
 class BRCMFX {
 public:
 	bool init();
@@ -27,16 +28,6 @@ private:
      *  @param size    kinfo memory size
      */
     void processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size);
-    
-    /**
-     *  Find service by name in a specified registry plane (gIO80211FamilyPlane or gIOServicePlane)
-     */
-    IOService* findService(const IORegistryPlane* plane, const char *service_name);
-    
-    /**
-     *  Try to start a service
-     */
-    bool startService(IOService* service, IOService* provider = nullptr);
     
     /**
      *  start func type
@@ -76,11 +67,9 @@ public:
      */
     struct ProcessingState {
         enum {
-            NothingReady       = 0,
-            BRCM4360Patched    = 1,
-            BRCMNICPatched     = 2,
-            BRCMNIC_MFGPatched = 4,
-            EverythingDone      = BRCM4360Patched | BRCMNICPatched | BRCMNIC_MFGPatched
+            NothingReady        = 0,
+            BRCMPatched         = 1,
+            EverythingDone      = BRCMPatched
         };
     };
     int progressState {ProcessingState::NothingReady};
@@ -97,4 +86,4 @@ public:
     };
 };
 
-#endif /* kern_hbfx_hpp */
+#endif /* kern_brcmfx_hpp */
