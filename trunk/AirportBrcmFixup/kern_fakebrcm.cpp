@@ -21,7 +21,7 @@ bool FakeBrcm::init(OSDictionary *propTable)
     bool ret = super::init(propTable);
     if (!ret)
     {
-        SYSLOG("super::init returned false\n");
+        SYSLOG("BRCMFX @ FakeBrcm super::init returned false\n");
         return false;
     }
     
@@ -40,7 +40,13 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
     IOService* ret = super::probe(provider, score);
     if (!ret)
     {
-        SYSLOG("super::probe returned nullptr\n");
+        SYSLOG("BRCMFX @ FakeBrcm super::probe returned nullptr\n");
+        return nullptr;
+    }
+    
+    if (getKernelVersion() > KernelVersion::Sierra)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::probe() exits if kernel version is higher than 10.12");
         return nullptr;
     }
 
@@ -65,8 +71,17 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
             else
                 SYSLOG("BRCMFX @ FakeBrcm: instance of driver %s couldn't be created", serviceNameList[i]);
         }
+#ifdef DEBUG
         else
-            SYSLOG("BRCMFX @ FakeBrcm::probe(): meta class for %s is null.", serviceNameList[i]);
+        {
+            DBGLOG("BRCMFX @ FakeBrcm::probe(): meta class for %s is null", serviceNameList[i]);
+            IOService *service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
+            if (service == nullptr)
+            {
+                DBGLOG("BRCMFX @ FakeBrcm::probe(): instance for driver %s can't be created", serviceNameList[i]);
+            }
+        }
+#endif
     }
     
     return ret;
@@ -81,7 +96,7 @@ bool FakeBrcm::start(IOService *provider)
     
     if (!super::start(provider))
     {
-        SYSLOG("super::start returned false\n");
+        SYSLOG("BRCMFX @ FakeBrcm super::start returned false\n");
         return false;
     }
 
