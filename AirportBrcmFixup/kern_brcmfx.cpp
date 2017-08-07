@@ -337,6 +337,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     auto method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
+                        patcher.clearError();
                         patcher.routeBlock(method_address, si_pmu_fvco_pllreg_opcodes, sizeof(si_pmu_fvco_pllreg_opcodes), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
@@ -352,6 +353,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
+                        patcher.clearError();
                         orgWlcSetCounrtyCode = reinterpret_cast<t_wlc_set_countrycode>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
@@ -367,6 +369,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
+                        patcher.clearError();
                         patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(newVendorString), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
@@ -382,6 +385,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
+                        patcher.clearError();
                         patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(checkBoardId), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
@@ -397,6 +401,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
+                        patcher.clearError();
                         orgStart = reinterpret_cast<t_start>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(start), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
@@ -407,32 +412,35 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                     }
                     
-                    // IOServicePlane should keep a pointer to FakeBrcm;
-                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
-                    if (service != nullptr)
+                    if (getKernelVersion() <= KernelVersion::Sierra)
                     {
-                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
-                        IOService* provider = service->getProvider();
-                        service->stop(provider);
-                        if (provider != nullptr && provider->isOpen(service))
+                        // IOServicePlane should keep a pointer to FakeBrcm;
+                        IOService* service = findService(gIOServicePlane, "FakeBrcm");
+                        if (service != nullptr)
                         {
-                            provider->close(service);
-                            service->detach(provider);
+                            DBGLOG("BRCMFX @ stop FakeBrcm driver");
+                            IOService* provider = service->getProvider();
+                            service->stop(provider);
+                            if (provider != nullptr && provider->isOpen(service))
+                            {
+                                provider->close(service);
+                                service->detach(provider);
+                            }
+                            DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
                         }
-                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
-                    }
-                    
-                    
-                    service = FakeBrcm::getService(serviceNameList[i]);
-                    if (service == nullptr)
-                    {
-                        SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
-                        break;
-                    }
+                        
+                        
+                        service = FakeBrcm::getService(serviceNameList[i]);
+                        if (service == nullptr)
+                        {
+                            SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
+                            break;
+                        }
 
-                    if (startService(service, FakeBrcm::getServiceProvider()))
-                    {
-                        SYSLOG("BRCMFX @ service %s successfully started, retain counter = %d", service->getName(), service->getRetainCount());
+                        if (startService(service, FakeBrcm::getServiceProvider()))
+                        {
+                            SYSLOG("BRCMFX @ service %s successfully started", service->getName());
+                        }
                     }
                     break;
                 }
