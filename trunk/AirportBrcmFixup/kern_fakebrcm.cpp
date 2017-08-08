@@ -43,12 +43,6 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
         SYSLOG("BRCMFX @ FakeBrcm super::probe returned nullptr\n");
         return nullptr;
     }
-    
-    if (getKernelVersion() > KernelVersion::Sierra)
-    {
-        DBGLOG("BRCMFX @ FakeBrcm::probe() exits if kernel version is higher than 10.12");
-        return nullptr;
-    }
 
     service_provider = provider;
     DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
