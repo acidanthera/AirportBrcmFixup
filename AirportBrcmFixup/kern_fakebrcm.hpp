@@ -3,7 +3,7 @@
 
 #include <Library/LegacyIOService.h>
 
-class FakeBrcm : public IOService
+class EXPORT FakeBrcm : public IOService
 {
     OSDeclareDefaultStructors(FakeBrcm);
     typedef IOService super;

@@ -412,35 +412,32 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                     }
                     
-                    if (getKernelVersion() <= KernelVersion::Sierra)
+                    // IOServicePlane should keep a pointer to FakeBrcm;
+                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
+                    if (service != nullptr)
                     {
-                        // IOServicePlane should keep a pointer to FakeBrcm;
-                        IOService* service = findService(gIOServicePlane, "FakeBrcm");
-                        if (service != nullptr)
+                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
+                        IOService* provider = service->getProvider();
+                        service->stop(provider);
+                        if (provider != nullptr && provider->isOpen(service))
                         {
-                            DBGLOG("BRCMFX @ stop FakeBrcm driver");
-                            IOService* provider = service->getProvider();
-                            service->stop(provider);
-                            if (provider != nullptr && provider->isOpen(service))
-                            {
-                                provider->close(service);
-                                service->detach(provider);
-                            }
-                            DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
+                            provider->close(service);
+                            service->detach(provider);
                         }
-                        
-                        
-                        service = FakeBrcm::getService(serviceNameList[i]);
-                        if (service == nullptr)
-                        {
-                            SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
-                            break;
-                        }
+                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
+                    }
+                    
+                    
+                    service = FakeBrcm::getService(serviceNameList[i]);
+                    if (service == nullptr)
+                    {
+                        SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
+                        break;
+                    }
 
-                        if (startService(service, FakeBrcm::getServiceProvider()))
-                        {
-                            SYSLOG("BRCMFX @ service %s successfully started", service->getName());
-                        }
+                    if (startService(service, FakeBrcm::getServiceProvider()))
+                    {
+                        SYSLOG("BRCMFX @ service %s successfully started", service->getName());
                     }
                     break;
                 }
