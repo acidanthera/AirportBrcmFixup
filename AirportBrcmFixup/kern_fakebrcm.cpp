@@ -10,6 +10,7 @@ OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 IOService *FakeBrcm::service_provider {nullptr};
 OSDictionary *FakeBrcm::service_dict {nullptr};
 
+//==============================================================================
 
 bool FakeBrcm::init(OSDictionary *propTable)
 {
@@ -30,6 +31,8 @@ bool FakeBrcm::init(OSDictionary *propTable)
     return true;
 }
 
+//==============================================================================
+
 IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 {
     if (config.disabled)
@@ -45,8 +48,6 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
     }
 
     service_provider = provider;
-    DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
-    *score = 1300;  // change probe score to be the first in the list
     
     for (int i=0; i<kextListSize; i++)
     {
@@ -78,8 +79,19 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 #endif
     }
     
+    if (!service_dict->getCount())
+    {
+        SYSLOG("BRCMFX @ FakeBrcm::probe() will return nullptr to fallback to original driver");
+        return nullptr;
+    }
+
+    DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
+    *score = 1300;  // change probe score to be the first in the list
+
     return ret;
 }
+
+//==============================================================================
 
 bool FakeBrcm::start(IOService *provider)
 {
@@ -97,12 +109,16 @@ bool FakeBrcm::start(IOService *provider)
     return true;
 }
 
+//==============================================================================
+
 void FakeBrcm::stop(IOService *provider)
 {
     DBGLOG("BRCMFX @ FakeBrcm::stop()");
 
     super::stop(provider);
 }
+
+//==============================================================================
 
 void FakeBrcm::free()
 {
@@ -112,6 +128,8 @@ void FakeBrcm::free()
 
     super::free();
 }
+
+//==============================================================================
 
 IOService* FakeBrcm::getService(const char* service_name)
 {
