@@ -15,7 +15,10 @@ OSDictionary *FakeBrcm::service_dict {nullptr};
 bool FakeBrcm::init(OSDictionary *propTable)
 {
     if (config.disabled)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::init(): FakeBrcm disabled");
         return false;
+    }
     
     DBGLOG("BRCMFX @ FakeBrcm::init()");
 
@@ -36,7 +39,10 @@ bool FakeBrcm::init(OSDictionary *propTable)
 IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 {
     if (config.disabled)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::probe(): FakeBrcm disabled");
         return nullptr;
+    }
     
     DBGLOG("BRCMFX @ FakeBrcm::probe()");
     
@@ -79,14 +85,16 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 #endif
     }
     
-    if (!service_dict->getCount())
+    if (service_dict->getCount() != 0)
     {
-        SYSLOG("BRCMFX @ FakeBrcm::probe() will return nullptr to fallback to original driver");
-        return nullptr;
+        DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
+        *score = 1300;  // change probe score to be the first in the list
     }
-
-    DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
-    *score = 1300;  // change probe score to be the first in the list
+    else
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::probe(): fallback to original driver");
+        config.disabled = true;
+    }
 
     return ret;
 }
@@ -96,13 +104,22 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 bool FakeBrcm::start(IOService *provider)
 {
     if (config.disabled)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::start(): FakeBrcm disabled");
         return false;
+    }
     
     DBGLOG("BRCMFX @ FakeBrcm::start()");
     
     if (!super::start(provider))
     {
         SYSLOG("BRCMFX @ FakeBrcm super::start returned false\n");
+        return false;
+    }
+    
+    if (!service_dict->getCount())
+    {
+        SYSLOG("BRCMFX @ FakeBrcm::start(): fallback to original driver");
         return false;
     }
 
