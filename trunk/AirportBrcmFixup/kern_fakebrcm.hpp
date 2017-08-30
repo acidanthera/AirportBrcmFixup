@@ -16,12 +16,14 @@ public:
     virtual void stop(IOService *provider) override;
     virtual void free() override;
     
-    static IOService* getServiceProvider() { return service_provider; }
-    static IOService* getService(const char* service_name);
+    static IOService*    getServiceProvider() { return service_provider; }
+    static IOService*    getService(const char* service_name);
+    static OSDictionary* getPropTable() { return prop_table; }
     
 protected:
     static IOService    *service_provider;
     static OSDictionary *service_dict;
+    static OSDictionary *prop_table;
 };
 
 

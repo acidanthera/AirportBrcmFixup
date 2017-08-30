@@ -211,14 +211,14 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
 //
 //  Try to start a service
 //
-bool startService(IOService* service, IOService* provider)
+bool startService(IOService* service, IOService* provider, OSDictionary* prop_table)
 {
     bool result = false;
     if (provider == nullptr)
         provider = service->getProvider();
     if (provider != nullptr)
     {
-        if (!service->init())
+        if (!service->init(prop_table))
         {
             SYSLOG("BRCMFX @ service %s can't be initialized", service->getName());
             return false;
@@ -435,10 +435,12 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         break;
                     }
 
-                    if (startService(service, FakeBrcm::getServiceProvider()))
+                    if (startService(service, FakeBrcm::getServiceProvider(), FakeBrcm::getPropTable()))
                     {
                         SYSLOG("BRCMFX @ service %s successfully started", service->getName());
                     }
+                    
+                    config.disabled = true;
                     break;
                 }
             }

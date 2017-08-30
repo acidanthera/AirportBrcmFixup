@@ -9,6 +9,7 @@ OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
 IOService *FakeBrcm::service_provider {nullptr};
 OSDictionary *FakeBrcm::service_dict {nullptr};
+OSDictionary *FakeBrcm::prop_table {nullptr};
 
 //==============================================================================
 
@@ -31,6 +32,9 @@ bool FakeBrcm::init(OSDictionary *propTable)
     
     service_dict = OSDictionary::withCapacity(1);
     
+    if (propTable != nullptr)
+        prop_table = OSDictionary::withDictionary(propTable);
+    
     return true;
 }
 
@@ -38,12 +42,6 @@ bool FakeBrcm::init(OSDictionary *propTable)
 
 IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 {
-    if (config.disabled)
-    {
-        DBGLOG("BRCMFX @ FakeBrcm::probe(): FakeBrcm disabled");
-        return nullptr;
-    }
-    
     DBGLOG("BRCMFX @ FakeBrcm::probe()");
     
     IOService* ret = super::probe(provider, score);
@@ -52,7 +50,14 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
         SYSLOG("BRCMFX @ FakeBrcm super::probe returned nullptr\n");
         return nullptr;
     }
-
+    
+    if (config.disabled)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::probe(): FakeBrcm disabled");
+        *score = -2000;
+        return ret;
+    }
+    
     service_provider = provider;
     
     for (int i=0; i<kextListSize; i++)
@@ -72,28 +77,18 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
             else
                 SYSLOG("BRCMFX @ FakeBrcm: instance of driver %s couldn't be created", serviceNameList[i]);
         }
-#ifdef DEBUG
-        else
-        {
-            DBGLOG("BRCMFX @ FakeBrcm::probe(): meta class for %s is null", serviceNameList[i]);
-            IOService *service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
-            if (service == nullptr)
-            {
-                DBGLOG("BRCMFX @ FakeBrcm::probe(): instance for driver %s can't be created", serviceNameList[i]);
-            }
-        }
-#endif
     }
     
     if (service_dict->getCount() != 0)
     {
         DBGLOG("BRCMFX @ FakeBrcm::probe() will change score from %d to 1300", *score);
-        *score = 1300;  // change probe score to be the first in the list
+        *score = 2000;  // change probe score to be the first in the list
     }
     else
     {
         DBGLOG("BRCMFX @ FakeBrcm::probe(): fallback to original driver");
         config.disabled = true;
+        *score = -2000;
     }
 
     return ret;
