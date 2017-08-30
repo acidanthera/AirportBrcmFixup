@@ -17,3 +17,9 @@ AirportBrcmFixup Changelog
 #### v1.0.4
 - Bug in release version has been fixed (EXPORT added).
 - Debugging output was improved.
+
+#### v1.0.5
+- Fix for High Sierra Developer Beta 7 (loading order)
+
+#### v1.0.6
+- Pass property table to the newly created instance of a driver. Disable FakeBrcm if processKext was called earlier.
