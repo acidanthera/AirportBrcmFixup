@@ -133,15 +133,18 @@ UInt16 BRCMFX::configRead16(IOService *that, UInt32 space, UInt8 offset)
 // 55 53 -> US
 // 43 4e -> CN
 
-void BRCMFX::wlc_set_countrycode(void *arg1, int16_t *country_code, int32_t arg3)
+int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3)
 {
-    DBGLOG("BRCMFX @ wlc_set_countrycode is called");
-    if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCounrtyCode)
+    int64_t result = 0;
+    DBGLOG("BRCMFX @ wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
+    if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
-        DBGLOG("BRCMFX @ contry code is set to %s", config.country_code);
-        memcpy(country_code, config.country_code, sizeof(int16_t));
-        callbackBRCMFX->orgWlcSetCounrtyCode(arg1, country_code, arg3);
+        DBGLOG("BRCMFX @ contry code is changed from %s to %s", country_code, config.country_code);
+        a3 = -1;
+        result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, config.country_code, a3);
     }
+    
+    return result;
 }
 
 //==============================================================================
@@ -150,6 +153,12 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 {
     bool result = false;
     DBGLOG("BRCMFX @ start is called");
+    
+    if (callbackBRCMFX && callbackBRCMFX->wl_msg_level && config.wl_msg_level != 0)
+        *callbackBRCMFX->wl_msg_level = config.wl_msg_level;
+    
+    if (callbackBRCMFX && callbackBRCMFX->wl_msg_level2 && config.wl_msg_level2 != 0)
+        *callbackBRCMFX->wl_msg_level2 = config.wl_msg_level2;
 
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgStart)
     {
@@ -354,7 +363,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     if (method_address) {
                         DBGLOG("BRCMFX @ obtained %s", method_name);
                         patcher.clearError();
-                        orgWlcSetCounrtyCode = reinterpret_cast<t_wlc_set_countrycode>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode), true));
+                        orgWlcSetCountryCodeRev = reinterpret_cast<t_wlc_set_countrycode_rev>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
                             DBGLOG("BRCMFX @ routed %s", method_name);
                         } else {
@@ -411,6 +420,10 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     } else {
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                     }
+                    
+                    wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level"));
+                    wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2"));
+                    
                     
                     // IOServicePlane should keep a pointer to FakeBrcm;
                     IOService* service = findService(gIOServicePlane, "FakeBrcm");

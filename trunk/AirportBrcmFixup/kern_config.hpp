@@ -17,7 +17,9 @@ public:
     static const char *bootargOff[];
     static const char *bootargDebug[];
     static const char *bootargBeta[];
-    static constexpr const char *bootargBrcmCountry {"brcmfx-country"};   // patch pci family
+    static constexpr const char *bootargBrcmCountry   {"brcmfx-country"};   // 5 Ghz patch - change default country
+    static constexpr const char *bootargWlanMsgLevel  {"wl_msg_level"};    // message level for wlan kexts
+    static constexpr const char *bootargWlanMsgLevel2 {"wl_msg_level2"};    // message level for wlan kexts
     
 public:
 	/**
@@ -28,9 +30,10 @@ public:
 	void readArguments();
     
     
-    char country_code[3] = {"US"}; // default value
+    char country_code[4] {"US"};
     bool disabled {false};
-	
+    int32_t wl_msg_level {0};
+    int32_t wl_msg_level2 {0};
 	
 #ifdef DEBUG
 	static constexpr const char *fullName {xStringify(PRODUCT_NAME) " Kernel Extension " xStringify(MODULE_VERSION) " DEBUG build"};
