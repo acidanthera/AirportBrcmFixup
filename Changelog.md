@@ -23,3 +23,6 @@ AirportBrcmFixup Changelog
 
 #### v1.0.6
 - Pass property table to the newly created instance of a driver. Disable FakeBrcm if processKext was called earlier.
+
+#### v1.0.7
+- New boot-args: wl_msg_level=XXXXX and wl_msg_level2=XXXXX pass specified values to respective fields in driver, allows to get a full log

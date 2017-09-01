@@ -32,6 +32,10 @@ Configuration config;
 void Configuration::readArguments() {
     
     PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code));
+    if (!PE_parse_boot_argn(bootargWlanMsgLevel, &wl_msg_level, sizeof(wl_msg_level)))
+        wl_msg_level = 0;
+    if (!PE_parse_boot_argn(bootargWlanMsgLevel2, &wl_msg_level2, sizeof(wl_msg_level2)))
+        wl_msg_level2 = 0;
     
     char tmp[16];
     disabled = PE_parse_boot_argn(config.bootargOff[0], tmp, sizeof(tmp));
