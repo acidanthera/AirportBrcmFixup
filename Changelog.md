@@ -26,3 +26,4 @@ AirportBrcmFixup Changelog
 
 #### v1.0.7
 - New boot-args: wl_msg_level=XXXXX and wl_msg_level2=XXXXX pass specified values to respective fields in driver, allows to get a full log
+- FakePCIID functionality is built-in
