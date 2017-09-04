@@ -13,34 +13,7 @@
 #include "kern_fakebrcm.hpp"
 #include "kern_misc.hpp"
 
-/* Definitions of PCI Config Registers */
-enum {
-	kIOPCIConfigVendorID                = 0x00,
-	kIOPCIConfigDeviceID                = 0x02,
-	kIOPCIConfigCommand                 = 0x04,
-	kIOPCIConfigStatus                  = 0x06,
-	kIOPCIConfigRevisionID              = 0x08,
-	kIOPCIConfigClassCode               = 0x09,
-	kIOPCIConfigCacheLineSize           = 0x0C,
-	kIOPCIConfigLatencyTimer            = 0x0D,
-	kIOPCIConfigHeaderType              = 0x0E,
-	kIOPCIConfigBIST                    = 0x0F,
-	kIOPCIConfigBaseAddress0            = 0x10,
-	kIOPCIConfigBaseAddress1            = 0x14,
-	kIOPCIConfigBaseAddress2            = 0x18,
-	kIOPCIConfigBaseAddress3            = 0x1C,
-	kIOPCIConfigBaseAddress4            = 0x20,
-	kIOPCIConfigBaseAddress5            = 0x24,
-	kIOPCIConfigCardBusCISPtr           = 0x28,
-	kIOPCIConfigSubSystemVendorID       = 0x2C,
-	kIOPCIConfigSubSystemID             = 0x2E,
-	kIOPCIConfigExpansionROMBase        = 0x30,
-	kIOPCIConfigCapabilitiesPtr         = 0x34,
-	kIOPCIConfigInterruptLine           = 0x3C,
-	kIOPCIConfigInterruptPin            = 0x3D,
-	kIOPCIConfigMinimumGrant            = 0x3E,
-	kIOPCIConfigMaximumLatency          = 0x3F
-};
+
 
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
@@ -98,37 +71,6 @@ const OSSymbol* BRCMFX::newVendorString(void)
 }
 
 //==============================================================================
-
-UInt16 BRCMFX::configRead16(IOService *that, UInt32 space, UInt8 offset)
-{
-    auto val = callbackBRCMFX->orgConfigRead16(that, space, offset);
-    
-    if (offset == kIOPCIConfigDeviceID)
-    {
-        DBGLOG("BRCMFX @ configRead16 is called, offset = %d, device-id = 0x%04x", offset, val);
-
-        auto realdev = OSDynamicCast(OSData, that->getProperty("device-id"));
-        auto realven = OSDynamicCast(OSData, that->getProperty("vendor-id"));
-        if (realdev && realdev->getLength() >= 2 && realven && realven->getLength() >= 2)
-        {
-            auto rdevice_id = static_cast<const uint16_t *>(realdev->getBytesNoCopy());
-            auto rvendor_id = static_cast<const uint16_t *>(realven->getBytesNoCopy());
-            if (rdevice_id && rvendor_id)
-            {
-                auto vendor_id = callbackBRCMFX->orgConfigRead16(that, space, kIOPCIConfigVendorID);
-                if (vendor_id == *rvendor_id && val != *rdevice_id)
-                {
-                    val = *rdevice_id;
-                    DBGLOG("BRCMFX @ configRead16 replaced device-id with value = 0x%04x", val);
-                }
-            }
-        }
-    }
-    
-    return val;
-}
-
-//==============================================================================
 // 23 61 means '#' 'a',  "#a" is universal for all countries
 // 55 53 -> US
 // 43 4e -> CN
@@ -161,20 +103,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
         *callbackBRCMFX->wl_msg_level2 = config.wl_msg_level2;
 
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgStart)
-    {
-        void * pcidev = static_cast<void *>(provider);
-        uint64_t * vmt = pcidev ? static_cast<uint64_t **>(pcidev)[0] : nullptr;
-        if (vmt)
-        {
-            callbackBRCMFX->orgConfigRead16 = reinterpret_cast<t_config_read16>(vmt[VMTOffset::configRead16]);
-            vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(BRCMFX::configRead16);
-        }
-        
         result = callbackBRCMFX->orgStart(service, provider);
-        
-        if (vmt)
-            vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(callbackBRCMFX->orgConfigRead16);
-    }
     
     return result;
 }
@@ -426,22 +355,23 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     
                     
                     // IOServicePlane should keep a pointer to FakeBrcm;
-                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
-                    if (service != nullptr)
-                    {
-                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
-                        IOService* provider = service->getProvider();
-                        service->stop(provider);
-                        if (provider != nullptr && provider->isOpen(service))
-                        {
-                            provider->close(service);
-                            service->detach(provider);
-                        }
-                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
-                    }
+//                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
+//                    if (service != nullptr)
+//                    {
+//                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
+//                        IOService* provider = service->getProvider();
+//                        service->stop(provider);
+//                        if (provider != nullptr && provider->isOpen(service))
+//                        {
+//                            provider->close(service);
+//                            service->detach(provider);
+//                        }
+//                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
+//                    }
+//                    
+                    config.disabled = true;
                     
-                    
-                    service = FakeBrcm::getService(serviceNameList[i]);
+                    IOService* service = FakeBrcm::getService(serviceNameList[i]);
                     if (service == nullptr)
                     {
                         SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
@@ -452,8 +382,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     {
                         SYSLOG("BRCMFX @ service %s successfully started", service->getName());
                     }
-                    
-                    config.disabled = true;
+
                     break;
                 }
             }

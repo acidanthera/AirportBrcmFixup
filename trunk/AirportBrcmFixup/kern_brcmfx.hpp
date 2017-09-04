@@ -33,11 +33,6 @@ private:
      *  start func type
      */
     using t_start = bool (*)(IOService *, IOService *);
-    
-    /**
-     *  configRead16 func type
-     */
-    using t_config_read16 = UInt16 (*)(IOService *, UInt32, UInt8);
  
     /**
      *  wlc_set_countrycode_rev func type
@@ -63,7 +58,6 @@ private:
      *  Trampolines for original method invocations
      */
     t_start                     orgStart                    {nullptr};
-    t_config_read16             orgConfigRead16             {nullptr};
     t_wlc_set_countrycode_rev   orgWlcSetCountryCodeRev     {nullptr};
     int32_t*                    wl_msg_level                {nullptr};
     int32_t*                    wl_msg_level2               {nullptr};
@@ -80,17 +74,6 @@ public:
         };
     };
     int progressState {ProcessingState::NothingReady};
-    
-    struct VMTOffset {
-        enum {
-            configRead16  = 0x860/sizeof(uintptr_t),
-            configWrite16 = 0x868/sizeof(uintptr_t),
-            configRead32  = 0x850/sizeof(uintptr_t),
-            configWrite32 = 0x858/sizeof(uintptr_t),
-            configRead8   = 0x870/sizeof(uintptr_t),
-            configWrite8  = 0x878/sizeof(uintptr_t),
-        };
-    };
 };
 
 #endif /* kern_brcmfx_hpp */
