@@ -81,9 +81,10 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     DBGLOG("BRCMFX @ wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
-        DBGLOG("BRCMFX @ contry code is changed from %s to %s", country_code, config.country_code);
         a3 = -1;
         result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, config.country_code, a3);
+        DBGLOG("BRCMFX @ contry code is changed from %s to %s, result = %lld", country_code, config.country_code, result);
+        IOSleep(100);
     }
     
     return result;
