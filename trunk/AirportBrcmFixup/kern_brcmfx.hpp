@@ -39,11 +39,6 @@ private:
      */
     using t_wlc_set_countrycode_rev = int64_t (*) (int64_t a1, const char *country_code, int a3);
     
-    /**
-     *  wlc_channel_sromccode func type
-     */
-    using t_wlc_channel_sromccode = const char* (*) (int64_t);
-    
 	/**
 	 *  Hooked methods / callbacks
 	 */
