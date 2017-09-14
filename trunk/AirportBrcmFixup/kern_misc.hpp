@@ -29,10 +29,6 @@ static const char *binList[] {
     "/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG"
 };
 
-// 4360: __ZN16AirPort_Brcm436014getPCIPropertyEP9IOServicePKcRj
-// NIC:  __ZN15AirPort_BrcmNIC14getPCIPropertyEP9IOServicePKcR
-// MFG:  __ZN19AirPort_BrcmNIC_MFG14getPCIPropertyEP9IOServicePKcRj
-
 static const char *symbolList[][5] {
     {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK16AirPort_Brcm436015newVendorStringEv",
         "__ZN16AirPort_Brcm436012checkBoardIdEPKc",       "__ZN16AirPort_Brcm43605startEP9IOService"    },
@@ -82,5 +78,8 @@ enum {
     kIOPCIConfigMinimumGrant            = 0x3E,
     kIOPCIConfigMaximumLatency          = 0x3F
 };
+
+int getIntegerProperty(IORegistryEntry* entry, const char *aKey);
+OSString* getStringProperty(IORegistryEntry* entry, const char *aKey);
 
 #endif /* kern_misc_hpp */

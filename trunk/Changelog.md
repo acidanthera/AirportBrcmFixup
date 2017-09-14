@@ -30,3 +30,6 @@ AirportBrcmFixup Changelog
 
 #### v1.0.8
 - 5 Ghz/country code patch fixed (low speed after wake up)
+
+#### v1.0.9
+- Parameter brcmfx-country can be located in ioreg (in provider, ARPT for example)

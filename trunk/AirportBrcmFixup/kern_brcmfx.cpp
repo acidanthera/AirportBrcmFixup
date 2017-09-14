@@ -8,6 +8,8 @@
 #include <Headers/kern_api.hpp>
 #include <Library/LegacyIOService.h>
 
+
+
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
 #include "kern_fakebrcm.hpp"
@@ -18,7 +20,6 @@
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
 static KernelPatcher *callbackPatcher {nullptr};
-static const IORegistryPlane* gIO80211FamilyPlane {nullptr};
 
 static KernelPatcher::KextInfo kextList[] {
     { idList[0], &binList[0], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
@@ -31,8 +32,6 @@ static KernelPatcher::KextInfo kextList[] {
 
 bool BRCMFX::init()
 {
-    gIO80211FamilyPlane	= IORegistryEntry::makePlane( "IO80211Plane" );
-    
     LiluAPI::Error error = lilu.onKextLoad(kextList, kextListSize,
                                            [](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
                                                callbackBRCMFX = static_cast<BRCMFX *>(user);
@@ -81,10 +80,24 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     DBGLOG("BRCMFX @ wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
+        OSString  *country_string = nullptr;
+        const char *new_country_code = config.country_code;
+        if (!config.country_code_overrided)
+        {
+            IOService *provider = FakeBrcm::getServiceProvider();
+            if (provider)
+            {
+                country_string = getStringProperty(provider, "brcmfx-country");
+                if (country_string && country_string->getLength() == 2)
+                    new_country_code = country_string->getCStringNoCopy();
+            }
+        }
+        
         a3 = -1;
-        result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, config.country_code, a3);
-        DBGLOG("BRCMFX @ contry code is changed from %s to %s, result = %lld", country_code, config.country_code, result);
+        result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, new_country_code, a3);
+        DBGLOG("BRCMFX @ contry code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
         IOSleep(100);
+        OSSafeReleaseNULL(country_string);
     }
     
     return result;
