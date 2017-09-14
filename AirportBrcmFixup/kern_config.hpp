@@ -31,6 +31,8 @@ public:
     
     
     char country_code[4] {"US"};
+    bool country_code_overrided {false};
+    
     bool disabled {false};
     int32_t wl_msg_level {0};
     int32_t wl_msg_level2 {0};

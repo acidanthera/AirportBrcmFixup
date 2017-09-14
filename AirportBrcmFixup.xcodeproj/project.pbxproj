@@ -344,7 +344,7 @@
 				MODULE_NAME = as.lvs1974.AirportBrcmFixup;
 				MODULE_START = "$(PRODUCT_NAME)_kern_start";
 				MODULE_STOP = "$(PRODUCT_NAME)_kern_stop";
-				MODULE_VERSION = 1.0.8;
+				MODULE_VERSION = 1.0.9;
 				OTHER_CFLAGS = (
 					"-mmmx",
 					"-msse",
@@ -388,7 +388,7 @@
 				MODULE_NAME = as.lvs1974.AirportBrcmFixup;
 				MODULE_START = "$(PRODUCT_NAME)_kern_start";
 				MODULE_STOP = "$(PRODUCT_NAME)_kern_stop";
-				MODULE_VERSION = 1.0.8;
+				MODULE_VERSION = 1.0.9;
 				OTHER_CFLAGS = (
 					"-mmmx",
 					"-msse",

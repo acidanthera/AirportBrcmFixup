@@ -28,6 +28,18 @@ int getIntegerProperty(IORegistryEntry* entry, const char *aKey)
 
 //==============================================================================
 
+OSString* getStringProperty(IORegistryEntry* entry, const char *aKey)
+{
+    OSData* data = OSDynamicCast(OSData, entry->getProperty(aKey));
+    if (!data)
+    {
+        return nullptr;
+    }
+    return OSString::withCString((const char *)data->getBytesNoCopy());
+}
+
+//==============================================================================
+
 bool isServiceSupported(IOService* service)
 {
     for (int i=0; i<kextListSize; i++)
