@@ -25,6 +25,10 @@ const char *Configuration::bootargBeta[] {
 	"-brcmfxbeta"
 };
 
+const char *Configuration::bootargBrcmCountry   {"brcmfx-country"};     // 5 Ghz patch - change default country
+const char *Configuration::bootargWlanMsgLevel  {"wl_msg_level"};       // message level for wlan kexts
+const char *Configuration::bootargWlanMsgLevel2 {"wl_msg_level2"};      // message level for wlan kexts
+
 
 Configuration config;
 
