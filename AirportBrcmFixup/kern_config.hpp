@@ -17,9 +17,9 @@ public:
     static const char *bootargOff[];
     static const char *bootargDebug[];
     static const char *bootargBeta[];
-    static constexpr const char *bootargBrcmCountry   {"brcmfx-country"};   // 5 Ghz patch - change default country
-    static constexpr const char *bootargWlanMsgLevel  {"wl_msg_level"};    // message level for wlan kexts
-    static constexpr const char *bootargWlanMsgLevel2 {"wl_msg_level2"};    // message level for wlan kexts
+    static const char *bootargBrcmCountry;      // 5 Ghz patch - change default country
+    static const char *bootargWlanMsgLevel;     // message level for wlan kexts
+    static const char *bootargWlanMsgLevel2;    // message level for wlan kexts
     
 public:
 	/**

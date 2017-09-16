@@ -87,7 +87,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
             IOService *provider = FakeBrcm::getServiceProvider();
             if (provider)
             {
-                country_string = getStringProperty(provider, "brcmfx-country");
+                country_string = getStringProperty(provider, config.bootargBrcmCountry);
                 if (country_string && country_string->getLength() == 2)
                     new_country_code = country_string->getCStringNoCopy();
             }
