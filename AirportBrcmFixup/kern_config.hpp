@@ -20,6 +20,7 @@ public:
     static const char *bootargBrcmCountry;      // 5 Ghz patch - change default country
     static const char *bootargWlanMsgLevel;     // message level for wlan kexts
     static const char *bootargWlanMsgLevel2;    // message level for wlan kexts
+    static const char *bootargBrcmEnableWowl;   // enable WOWL (WoWLAN)
     
 public:
 	/**
@@ -33,9 +34,11 @@ public:
     char country_code[4] {"US"};
     bool country_code_overrided {false};
     
-    bool disabled {false};
-    int32_t wl_msg_level {0};
-    int32_t wl_msg_level2 {0};
+    bool disabled           {false};
+    bool enable_wowl        {false};
+    
+    int32_t wl_msg_level    {0};
+    int32_t wl_msg_level2   {0};
 	
 #ifdef DEBUG
 	static constexpr const char *fullName {xStringify(PRODUCT_NAME) " Kernel Extension " xStringify(MODULE_VERSION) " DEBUG build"};

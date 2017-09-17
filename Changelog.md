@@ -33,3 +33,6 @@ AirportBrcmFixup Changelog
 
 #### v1.0.9
 - Parameter brcmfx-country can be located in ioreg (in provider, ARPT for example)
+
+#### v1.0.10
+- WOWL (WoWLAN) is disabled by default. Use boot-arg -brcmfxwowl to enable it.

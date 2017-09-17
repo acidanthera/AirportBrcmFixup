@@ -29,13 +29,13 @@ static const char *binList[] {
     "/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG"
 };
 
-static const char *symbolList[][5] {
+static const char *symbolList[][6] {
     {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK16AirPort_Brcm436015newVendorStringEv",
-        "__ZN16AirPort_Brcm436012checkBoardIdEPKc",       "__ZN16AirPort_Brcm43605startEP9IOService"    },
+        "__ZN16AirPort_Brcm436012checkBoardIdEPKc",       "__ZN16AirPort_Brcm43605startEP9IOService",      "_wlc_wowl_enable" },
     {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK15AirPort_BrcmNIC15newVendorStringEv",
-        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,       "__ZN15AirPort_BrcmNIC5startEP9IOService"    },
+        "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,       "__ZN15AirPort_BrcmNIC5startEP9IOService",       "_wlc_wowl_enable" },
     {"_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",  "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",
-        "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",    "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService" }
+        "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",    "__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",   "_wlc_wowl_enable" }
 };
 
 

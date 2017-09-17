@@ -105,6 +105,14 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 
 //==============================================================================
 
+bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
+{
+    DBGLOG("BRCMFX @ wlc_wowl_enable is called, change returned value to false");
+    return false;
+}
+
+//==============================================================================
+
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
     bool result = false;
@@ -364,25 +372,28 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX @ failed to resolve %s", method_name);
                     }
                     
+                    // Disable WOWL (WoWLAN)
+                    if (!config.enable_wowl)
+                    {
+                        method_name = symbolList[i][5];
+                        method_address = patcher.solveSymbol(index, method_name);
+                        if (method_address) {
+                            DBGLOG("BRCMFX @ obtained %s", method_name);
+                            patcher.clearError();
+                            patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_wowl_enable), true);
+                            if (patcher.getError() == KernelPatcher::Error::NoError) {
+                                DBGLOG("BRCMFX @ routed %s", method_name);
+                            } else {
+                                SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            }
+                        } else {
+                            SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        }
+                    }
+                    
                     wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level"));
                     wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2"));
                     
-                    
-                    // IOServicePlane should keep a pointer to FakeBrcm;
-//                    IOService* service = findService(gIOServicePlane, "FakeBrcm");
-//                    if (service != nullptr)
-//                    {
-//                        DBGLOG("BRCMFX @ stop FakeBrcm driver");
-//                        IOService* provider = service->getProvider();
-//                        service->stop(provider);
-//                        if (provider != nullptr && provider->isOpen(service))
-//                        {
-//                            provider->close(service);
-//                            service->detach(provider);
-//                        }
-//                        DBGLOG("BRCMFX @ FakeBrcm driver is stopped");
-//                    }
-//                    
                     config.disabled = true;
                     
                     IOService* service = FakeBrcm::getService(serviceNameList[i]);
