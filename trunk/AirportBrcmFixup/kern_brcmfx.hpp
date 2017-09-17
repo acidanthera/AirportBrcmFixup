@@ -39,6 +39,7 @@ private:
      */
     using t_wlc_set_countrycode_rev = int64_t (*) (int64_t a1, const char *country_code, int a3);
     
+    
 	/**
 	 *  Hooked methods / callbacks
 	 */
@@ -47,6 +48,7 @@ private:
     static bool             start(IOService *service, IOService* provider);
     static UInt16           configRead16(IOService *that, UInt32 bits, UInt8 offset);
     static int64_t          wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3);
+    static bool             wlc_wowl_enable(int64_t **a1);
 
     
     /**
