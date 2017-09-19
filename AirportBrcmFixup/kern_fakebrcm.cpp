@@ -81,8 +81,7 @@ bool FakeBrcm::init(OSDictionary *propTable)
 
 bool FakeBrcm::attach(IOService *provider)
 {  
-    if (!hookProvider(provider))
-        return false;
+    hookProvider(provider);
     
     return super::attach(provider);
 }
@@ -168,8 +167,7 @@ bool FakeBrcm::start(IOService *provider)
         return false;
     }
     
-    if (!hookProvider(provider))
-        return false;
+    hookProvider(provider);
 
     return true;
 }
@@ -289,44 +287,53 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 
 //==============================================================================
 
-bool FakeBrcm::hookProvider(IOService *provider)
+void FakeBrcm::hookProvider(IOService *provider)
 {
+    if (getIntegerProperty(provider, "RM,subsystem-id") != -1 ||
+        getIntegerProperty(provider, "RM,subsystem-vendor-id") != -1 ||
+        getIntegerProperty(provider, "RM,device-id") != -1 ||
+        getIntegerProperty(provider, "RM,vendor-id") != -1)
+    {
+        DBGLOG("BRCMFX @ FakeBrcm::hookProvider - FakePCIID DETECTED!");
+    }
+    
     void * pcidev = static_cast<void *>(provider);
     uint64_t * vmt = pcidev ? static_cast<uint64_t **>(pcidev)[0] : nullptr;
-    if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(FakeBrcm::configRead16))
+    if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(FakeBrcm::configRead16) && orgConfigRead16 == nullptr)
     {
         orgConfigRead16 = reinterpret_cast<t_config_read16>(vmt[VMTOffset::configRead16]);
         vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(FakeBrcm::configRead16);
         DBGLOG("BRCMFX @ FakeBrcm::hookProvider for configRead16 was successful");
     }
     
-    if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(FakeBrcm::configRead32))
+    if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(FakeBrcm::configRead32) && orgConfigRead32 == nullptr)
     {
         orgConfigRead32 = reinterpret_cast<t_config_read32>(vmt[VMTOffset::configRead32]);
         vmt[VMTOffset::configRead32] = reinterpret_cast<uint64_t>(FakeBrcm::configRead32);
         DBGLOG("BRCMFX @ FakeBrcm::hookProvider for configRead32 was successful");
     }
-    return true;
 }
 
 //==============================================================================
 
 void FakeBrcm::unhookProvider()
 {
-    if (service_provider != nullptr && orgConfigRead16 != nullptr)
+    if (service_provider != nullptr)
     {
         void * pcidev = static_cast<void *>(service_provider);
         uint64_t * vmt = pcidev ? static_cast<uint64_t **>(pcidev)[0] : nullptr;
-        if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(orgConfigRead16))
+        if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(orgConfigRead16) && orgConfigRead16 != nullptr)
         {
             vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(orgConfigRead16);
             DBGLOG("BRCMFX @ FakeBrcm::unhookProvider for configRead16 was successful");
+            orgConfigRead16 = nullptr;
         }
         
-        if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(orgConfigRead32))
+        if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(orgConfigRead32) && orgConfigRead32 != nullptr)
         {
             vmt[VMTOffset::configRead32] = reinterpret_cast<uint64_t>(orgConfigRead32);
             DBGLOG("BRCMFX @ FakeBrcm::unhookProvider for configRead32 was successful");
+            orgConfigRead32 = nullptr;
         }
     }
 }
