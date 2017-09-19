@@ -22,7 +22,11 @@ public:
     static IOService*    getService(const char* service_name);
     static OSDictionary* getPropTable() { return prop_table; }
     
+    static void hookProvider(IOService* provider);
+    static void unhookProvider();
     
+
+private:
     /**
      *  configRead16 func type
      */
@@ -32,10 +36,7 @@ public:
     static UInt16           configRead16(IOService *that, UInt32 bits, UInt8 offset);
     static UInt32           configRead32(IOService *that, UInt32 bits, UInt8 offset);
     
-    bool hookProvider(IOService* provider);
-    void unhookProvider();
-    
-protected:
+private:
     static IOService        *service_provider;
     static OSDictionary     *service_dict;
     static OSDictionary     *prop_table;
