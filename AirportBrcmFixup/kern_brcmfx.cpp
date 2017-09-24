@@ -22,9 +22,9 @@ static BRCMFX *callbackBRCMFX {nullptr};
 static KernelPatcher *callbackPatcher {nullptr};
 
 static KernelPatcher::KextInfo kextList[] {
-    { idList[0], &binList[0], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[1], &binList[1], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[2], &binList[2], 1, true, false, {}, KernelPatcher::KextInfo::Unloaded }
+    { idList[0], &binList[0], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[1], &binList[1], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[2], &binList[2], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded }
 };
 
 
@@ -40,7 +40,7 @@ bool BRCMFX::init()
                                            }, this);
     
     if (error != LiluAPI::Error::NoError) {
-        SYSLOG("BRCMFX @ failed to register onKextLoad method %d", error);
+        SYSLOG("BRCMFX", "failed to register onKextLoad method %d", error);
         return false;
     }
     
@@ -57,7 +57,7 @@ void BRCMFX::deinit()
 
 bool BRCMFX::checkBoardId(const char *boardID)
 {
-    DBGLOG("BRCMFX @ checkBoardId is called");
+    DBGLOG("BRCMFX", "checkBoardId is called");
     return true;
 }
 
@@ -65,7 +65,7 @@ bool BRCMFX::checkBoardId(const char *boardID)
 
 const OSSymbol* BRCMFX::newVendorString(void)
 {
-    DBGLOG("BRCMFX @ newVendorString is called");
+    DBGLOG("BRCMFX", "newVendorString is called");
     return OSSymbol::withCString("Apple");
 }
 
@@ -77,7 +77,7 @@ const OSSymbol* BRCMFX::newVendorString(void)
 int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3)
 {
     int64_t result = 0;
-    DBGLOG("BRCMFX @ wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
+    DBGLOG("BRCMFX", "wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
         OSString  *country_string = nullptr;
@@ -95,7 +95,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
         
         a3 = -1;
         result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, new_country_code, a3);
-        DBGLOG("BRCMFX @ contry code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
+        DBGLOG("BRCMFX", "contry code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
         IOSleep(100);
         OSSafeReleaseNULL(country_string);
     }
@@ -107,7 +107,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 
 bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 {
-    DBGLOG("BRCMFX @ wlc_wowl_enable is called, change returned value to false");
+    DBGLOG("BRCMFX", "wlc_wowl_enable is called, change returned value to false");
     return false;
 }
 
@@ -116,7 +116,7 @@ bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
     bool result = false;
-    DBGLOG("BRCMFX @ start is called");
+    DBGLOG("BRCMFX", "start is called");
     
     if (callbackBRCMFX && callbackBRCMFX->wl_msg_level && config.wl_msg_level != 0)
         *callbackBRCMFX->wl_msg_level = config.wl_msg_level;
@@ -180,11 +180,11 @@ bool startService(IOService* service, IOService* provider, OSDictionary* prop_ta
     {
         if (!service->init(prop_table))
         {
-            SYSLOG("BRCMFX @ service %s can't be initialized", service->getName());
+            SYSLOG("BRCMFX", "service %s can't be initialized", service->getName());
             return false;
         }
         
-        DBGLOG("BRCMFX @ service name = %s, provider name = %s", service->getName(), provider->getName());
+        DBGLOG("BRCMFX", "service name = %s, provider name = %s", service->getName(), provider->getName());
         if (service->attach(provider))
         {
             SInt32 score = 0;
@@ -199,22 +199,22 @@ bool startService(IOService* service, IOService* provider, OSDictionary* prop_ta
                     result = service_to_start->start(provider);
                     if (!result)
                     {
-                        SYSLOG("BRCMFX @ service %s can't be started", service_to_start->getName());
+                        SYSLOG("BRCMFX", "service %s can't be started", service_to_start->getName());
                         service->detach( provider );
                     }
                 }
                 else
-                    SYSLOG("BRCMFX @ service %s can't be attached to provider", service_to_start->getName());
+                    SYSLOG("BRCMFX", "service %s can't be attached to provider", service_to_start->getName());
                 service_to_start->release();
             }
             else
-                SYSLOG("BRCMFX @ service %s probe returned null", service->getName());
+                SYSLOG("BRCMFX", "service %s probe returned null", service->getName());
         }
         else
-            SYSLOG("BRCMFX @ service %s can't be attached to provider %s", service->getName(), provider->getName());
+            SYSLOG("BRCMFX", "service %s can't be attached to provider %s", service->getName(), provider->getName());
     }
     else
-        SYSLOG("BRCMFX @ service %s doesn't have provider", service->getName());
+        SYSLOG("BRCMFX", "service %s doesn't have provider", service->getName());
     return result;
 }
 
@@ -282,13 +282,13 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                 {
                     progressState |= ProcessingState::BRCMPatched;
                     
-                    DBGLOG("BRCMFX @ found %s", idList[i]);
+                    DBGLOG("BRCMFX", "found %s", idList[i]);
                     
                     // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
                     IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
                     if (running_service != nullptr)
                     {
-                        SYSLOG("BRCMFX @ %s driver is already loaded, too late to do patching", serviceNameList[i]);
+                        SYSLOG("BRCMFX", "%s driver is already loaded, too late to do patching", serviceNameList[i]);
                         break;
                     }
 
@@ -296,80 +296,80 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     const char *method_name = symbolList[i][0];
                     auto method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
-                        DBGLOG("BRCMFX @ obtained %s", method_name);
+                        DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
                         patcher.routeBlock(method_address, si_pmu_fvco_pllreg_opcodes, sizeof(si_pmu_fvco_pllreg_opcodes), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX @ routed %s", method_name);
+                            DBGLOG("BRCMFX", "routed %s", method_name);
                         } else {
-                            SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            SYSLOG("BRCMFX", "failed to route %s", method_name);
                         }
                     } else {
-                        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
                     // Wi-Fi 5 Ghz/Country code patch (required for 10.11)
                     method_name = symbolList[i][1];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
-                        DBGLOG("BRCMFX @ obtained %s", method_name);
+                        DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
                         orgWlcSetCountryCodeRev = reinterpret_cast<t_wlc_set_countrycode_rev>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX @ routed %s", method_name);
+                            DBGLOG("BRCMFX", "routed %s", method_name);
                         } else {
-                            SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            SYSLOG("BRCMFX", "failed to route %s", method_name);
                         }
                     } else {
-                        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
                     // Third party device patch
                     method_name = symbolList[i][2];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
-                        DBGLOG("BRCMFX @ obtained %s", method_name);
+                        DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
                         patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(newVendorString), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX @ routed %s", method_name);
+                            DBGLOG("BRCMFX", "routed %s", method_name);
                         } else {
-                            SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            SYSLOG("BRCMFX", "failed to route %s", method_name);
                         }
                     } else {
-                        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
                     // White list restriction patch
                     method_name = symbolList[i][3];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
-                        DBGLOG("BRCMFX @ obtained %s", method_name);
+                        DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
                         patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(checkBoardId), true);
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX @ routed %s", method_name);
+                            DBGLOG("BRCMFX", "routed %s", method_name);
                         } else {
-                            SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            SYSLOG("BRCMFX", "failed to route %s", method_name);
                         }
                     } else {
-                        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
                     // Failed PCIe configuration (device-id checking)
                     method_name = symbolList[i][4];
                     method_address = patcher.solveSymbol(index, method_name);
                     if (method_address) {
-                        DBGLOG("BRCMFX @ obtained %s", method_name);
+                        DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
                         orgStart = reinterpret_cast<t_start>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(start), true));
                         if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX @ routed %s", method_name);
+                            DBGLOG("BRCMFX", "routed %s", method_name);
                         } else {
-                            SYSLOG("BRCMFX @ failed to route %s", method_name);
+                            SYSLOG("BRCMFX", "failed to route %s", method_name);
                         }
                     } else {
-                        SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
                     // Disable WOWL (WoWLAN)
@@ -378,16 +378,16 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         method_name = symbolList[i][5];
                         method_address = patcher.solveSymbol(index, method_name);
                         if (method_address) {
-                            DBGLOG("BRCMFX @ obtained %s", method_name);
+                            DBGLOG("BRCMFX", "obtained %s", method_name);
                             patcher.clearError();
                             patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(wlc_wowl_enable), true);
                             if (patcher.getError() == KernelPatcher::Error::NoError) {
-                                DBGLOG("BRCMFX @ routed %s", method_name);
+                                DBGLOG("BRCMFX", "routed %s", method_name);
                             } else {
-                                SYSLOG("BRCMFX @ failed to route %s", method_name);
+                                SYSLOG("BRCMFX", "failed to route %s", method_name);
                             }
                         } else {
-                            SYSLOG("BRCMFX @ failed to resolve %s", method_name);
+                            SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                         }
                     }
                     
@@ -399,13 +399,13 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     IOService* service = FakeBrcm::getService(serviceNameList[i]);
                     if (service == nullptr)
                     {
-                        SYSLOG("BRCMFX @ instance of driver %s couldn't be found", serviceNameList[i]);
+                        SYSLOG("BRCMFX", "instance of driver %s couldn't be found", serviceNameList[i]);
                         break;
                     }
 
                     if (startService(service, FakeBrcm::getServiceProvider(), FakeBrcm::getPropTable()))
                     {
-                        SYSLOG("BRCMFX @ service %s successfully started", service->getName());
+                        SYSLOG("BRCMFX", "service %s successfully started", service->getName());
                     }
 
                     break;

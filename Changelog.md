@@ -36,3 +36,9 @@ AirportBrcmFixup Changelog
 
 #### v1.0.10
 - WOWL (WoWLAN) is disabled by default. Use boot-arg -brcmfxwowl to enable it.
+
+#### v.1.0.11
+- Fix co-existing with FakePCIID_Broadcom_WiFi.kext & FakePCIID
+
+#### v1.1.0
+- XCode 9 & Lilu 1.2.0 compatibility fixes (Lilu 1.2.0 is required)
