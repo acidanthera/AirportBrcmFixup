@@ -79,7 +79,4 @@ enum {
     kIOPCIConfigMaximumLatency          = 0x3F
 };
 
-int getIntegerProperty(IORegistryEntry* entry, const char *aKey);
-OSString* getStringProperty(IORegistryEntry* entry, const char *aKey);
-
 #endif /* kern_misc_hpp */
