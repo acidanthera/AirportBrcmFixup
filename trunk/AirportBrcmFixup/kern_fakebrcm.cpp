@@ -1,5 +1,6 @@
 #include <Library/LegacyIOService.h>
 #include <Headers/kern_api.hpp>
+#include <Headers/kern_iokit.hpp>
 
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
@@ -13,30 +14,6 @@ OSDictionary *FakeBrcm::prop_table {nullptr};
 FakeBrcm::t_config_read16  FakeBrcm::orgConfigRead16 {nullptr};
 FakeBrcm::t_config_read32  FakeBrcm::orgConfigRead32 {nullptr};
 
-//==============================================================================
-
-int getIntegerProperty(IORegistryEntry* entry, const char *aKey)
-{
-    OSData* data = OSDynamicCast(OSData, entry->getProperty(aKey));
-    if (!data || sizeof(UInt32) != data->getLength())
-    {
-        return -1;
-    }
-    UInt32 result = *static_cast<const UInt32*>(data->getBytesNoCopy());
-    return result;
-}
-
-//==============================================================================
-
-OSString* getStringProperty(IORegistryEntry* entry, const char *aKey)
-{
-    OSData* data = OSDynamicCast(OSData, entry->getProperty(aKey));
-    if (!data)
-    {
-        return nullptr;
-    }
-    return OSString::withCString((const char *)data->getBytesNoCopy());
-}
 
 //==============================================================================
 
@@ -235,15 +212,15 @@ UInt16 FakeBrcm::configRead16(IOService *that, UInt32 space, UInt8 offset)
     {
         case kIOPCIConfigVendorID:
         {
-            int vendor = getIntegerProperty(that, "vendor-id");
-            if (-1 != vendor)
+            UInt32 vendor;
+            if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
                 newResult = vendor;
             break;
         }
         case kIOPCIConfigDeviceID:
         {
-            int device = getIntegerProperty(that, "device-id");
-            if (-1 != device)
+            UInt32 device;
+            if (WIOKit::getOSDataValue(that, "device-id", device))
                 newResult = device;
             break;
         }
@@ -268,12 +245,10 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
         case kIOPCIConfigVendorID:
         case kIOPCIConfigDeviceID: // OS X does a non-aligned read, which still returns full vendor / device ID
         {
-            int vendor = getIntegerProperty(that, "vendor-id");
-            if (-1 != vendor)
+            UInt32 vendor, device;
+            if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
                 newResult = (newResult & 0xFFFF0000) | vendor;
-            
-            int device = getIntegerProperty(that, "device-id");
-            if (-1 != device)
+            if (WIOKit::getOSDataValue(that, "device-id", device))
                 newResult = (device << 16) | (newResult & 0xFFFF);
             break;
         }
@@ -289,10 +264,11 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 
 void FakeBrcm::hookProvider(IOService *provider)
 {
-    if (getIntegerProperty(provider, "RM,subsystem-id") != -1 ||
-        getIntegerProperty(provider, "RM,subsystem-vendor-id") != -1 ||
-        getIntegerProperty(provider, "RM,device-id") != -1 ||
-        getIntegerProperty(provider, "RM,vendor-id") != -1)
+    UInt32 value;
+    if (WIOKit::getOSDataValue(provider, "RM,subsystem-id", value) ||
+        WIOKit::getOSDataValue(provider, "RM,subsystem-vendor-id", value) ||
+        WIOKit::getOSDataValue(provider, "RM,device-id", value) ||
+        WIOKit::getOSDataValue(provider, "RM,vendor-id", value))
     {
         DBGLOG("BRCMFX", "FakeBrcm::hookProvider - FakePCIID DETECTED!");
     }

@@ -6,9 +6,6 @@
 //
 
 #include <Headers/kern_api.hpp>
-#include <Library/LegacyIOService.h>
-
-
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
@@ -82,14 +79,13 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     {
         OSString  *country_string = nullptr;
         const char *new_country_code = config.country_code;
-        if (!config.country_code_overrided)
+        if (!config.country_code_overrided && FakeBrcm::getServiceProvider())
         {
-            IOService *provider = FakeBrcm::getServiceProvider();
-            if (provider)
+            OSData* data = OSDynamicCast(OSData, FakeBrcm::getServiceProvider()->getProperty(config.bootargBrcmCountry));
+            if (data)
             {
-                country_string = getStringProperty(provider, config.bootargBrcmCountry);
-                if (country_string && country_string->getLength() == 2)
-                    new_country_code = country_string->getCStringNoCopy();
+                new_country_code = reinterpret_cast<const char *>(data->getBytesNoCopy());
+                DBGLOG("BRCMFX", "contry code overrided in ioreg");
             }
         }
         
