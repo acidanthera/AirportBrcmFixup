@@ -1,4 +1,5 @@
 #include <Library/LegacyIOService.h>
+#include <Headers/plugin_start.hpp>
 #include <Headers/kern_api.hpp>
 #include <Headers/kern_iokit.hpp>
 
@@ -68,14 +69,19 @@ bool FakeBrcm::attach(IOService *provider)
 IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 {
     DBGLOG("BRCMFX", "FakeBrcm::probe()");
-    
+
+	if (!ADDPR(startSuccess))
+	{
+		return nullptr;
+	}
+
     IOService* ret = super::probe(provider, score);
     if (!ret)
     {
         SYSLOG("BRCMFX", "FakeBrcm super::probe returned nullptr\n");
         return nullptr;
     }
-    
+
     if (config.disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe(): FakeBrcm disabled");
@@ -124,13 +130,18 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 
 bool FakeBrcm::start(IOService *provider)
 {
+	DBGLOG("BRCMFX", "FakeBrcm::start()");
+
+	if (!ADDPR(startSuccess))
+	{
+		return nullptr;
+	}
+
     if (config.disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::start(): FakeBrcm disabled");
         return false;
     }
-    
-    DBGLOG("BRCMFX", "FakeBrcm::start()");
     
     if (!super::start(provider))
     {

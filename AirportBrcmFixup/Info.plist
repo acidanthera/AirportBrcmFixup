@@ -82,10 +82,10 @@
 	<string>1.0</string>
 	<key>OSBundleLibraries</key>
 	<dict>
-		<key>com.apple.iokit.IONetworkingFamily</key>
-		<string>3.1</string>
 		<key>as.vit9696.Lilu</key>
 		<string>1.2.0</string>
+		<key>com.apple.iokit.IONetworkingFamily</key>
+		<string>1.5</string>
 		<key>com.apple.iokit.IOPCIFamily</key>
 		<string>2.7</string>
 		<key>com.apple.kpi.bsd</key>

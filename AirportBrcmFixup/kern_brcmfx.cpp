@@ -18,10 +18,10 @@
 static BRCMFX *callbackBRCMFX {nullptr};
 static KernelPatcher *callbackPatcher {nullptr};
 
-static KernelPatcher::KextInfo kextList[] {
-    { idList[0], &binList[0], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[1], &binList[1], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded },
-    { idList[2], &binList[2], 1, {true, false}, {}, KernelPatcher::KextInfo::Unloaded }
+static KernelPatcher::KextInfo kextList[kextListSize] {
+    { idList[0], &binList[0], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[1], &binList[1], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+    { idList[2], &binList[2], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded }
 };
 
 
