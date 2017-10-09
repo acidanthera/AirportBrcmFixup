@@ -166,7 +166,7 @@ void FakeBrcm::stop(IOService *provider)
 {
     DBGLOG("BRCMFX", "FakeBrcm::stop()");
     
-    unhookProvider();
+    //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
 
     super::stop(provider);
 }
@@ -179,7 +179,7 @@ void FakeBrcm::free()
     
     OSSafeReleaseNULL(service_dict);
     
-    unhookProvider();
+    //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
 
     super::free();
 }
