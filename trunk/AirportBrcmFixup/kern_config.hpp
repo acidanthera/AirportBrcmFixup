@@ -39,13 +39,7 @@ public:
     
     int32_t wl_msg_level    {0};
     int32_t wl_msg_level2   {0};
-	
-#ifdef DEBUG
-	static constexpr const char *fullName {xStringify(PRODUCT_NAME) " Kernel Extension " xStringify(MODULE_VERSION) " DEBUG build"};
-#else
-	static constexpr const char *fullName {xStringify(PRODUCT_NAME) " Kernel Extension " xStringify(MODULE_VERSION)};
-#endif
-	
+
     Configuration() = default;
 };
 
