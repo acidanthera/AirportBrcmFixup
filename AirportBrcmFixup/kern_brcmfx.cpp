@@ -77,7 +77,6 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     DBGLOG("BRCMFX", "wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
-        OSString  *country_string = nullptr;
         const char *new_country_code = config.country_code;
         if (!config.country_code_overrided && FakeBrcm::getServiceProvider())
         {
@@ -85,15 +84,14 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
             if (data)
             {
                 new_country_code = reinterpret_cast<const char *>(data->getBytesNoCopy());
-                DBGLOG("BRCMFX", "contry code overrided in ioreg");
+                DBGLOG("BRCMFX", "country code is overrided in ioreg");
             }
         }
         
         a3 = -1;
         result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, new_country_code, a3);
-        DBGLOG("BRCMFX", "contry code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
+        DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
         IOSleep(100);
-        OSSafeReleaseNULL(country_string);
     }
     
     return result;
