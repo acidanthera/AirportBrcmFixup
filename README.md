@@ -15,6 +15,23 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - Implements patch for "Failed PCIe configuration patch", required for some cards 
 - Implements patch for "Third Party Device" (returns vendor name "Apple")
 - Implements patch for removing of white-list check
+- Implements 5Ghz and country code patch (US by default)
+- Implements WOWL (WoWLAN) disabler (turned on by default) - no low speed after wake
+
+#### Installation types
+- Clover Airport Fix + AirportBrcmFixup
+- Clover Airport Fix + AddProperties(fake device-id) + AirportBrcmFixup (preferable)
+- Clover Airport Fix + AirportBrcmFixup + FakePCIID + FakePCIID_Broadcom_WiFi.kext
+- AirportBrcmFixup + FakePCIID + FakePCIID_Broadcom_WiFi.kext
+
+#### Boot-args
+- "brcmfx-country=XX" changes the country code to XX (US, CN, #a, ...)
+- "-brcmfxdbg" turns on debugging output
+- "-brcmfxbeta" enables loading on unsupported osx
+- "-brcmfxoff" disables kext loading
+- "wl_msg_level=0xXXXX" & "wl_msg_level2=0xXXXX" set log level for native network kexts
+- "-brcmfxwowl" enables WOWL (WoWLAN) - it is disabled by default
+Option "brcmfx-country" also can be injected via DSDT or AddProperties/Arbitrary in Clover
 
 #### Credits
 - [Apple](https://www.apple.com) for macOS  
