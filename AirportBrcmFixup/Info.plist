@@ -83,7 +83,7 @@
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>as.vit9696.Lilu</key>
-		<string>1.2.0</string>
+		<string>1.2.3</string>
 		<key>com.apple.iokit.IONetworkingFamily</key>
 		<string>1.5</string>
 		<key>com.apple.iokit.IOPCIFamily</key>

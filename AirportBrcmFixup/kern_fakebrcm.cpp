@@ -2,6 +2,7 @@
 #include <Headers/plugin_start.hpp>
 #include <Headers/kern_api.hpp>
 #include <Headers/kern_iokit.hpp>
+#include <Headers/kern_patcher.hpp>
 
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
@@ -221,14 +222,14 @@ UInt16 FakeBrcm::configRead16(IOService *that, UInt32 space, UInt8 offset)
     if (that == service_provider || isServiceSupported(that))
     switch (offset)
     {
-        case kIOPCIConfigVendorID:
+        case WIOKit::PCIRegister::kIOPCIConfigVendorID:
         {
             UInt32 vendor;
             if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
                 newResult = vendor;
             break;
         }
-        case kIOPCIConfigDeviceID:
+        case WIOKit::PCIRegister::kIOPCIConfigDeviceID:
         {
             UInt32 device;
             if (WIOKit::getOSDataValue(that, "device-id", device))
@@ -253,8 +254,8 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
     if (that == service_provider || isServiceSupported(that))
     switch (offset)
     {
-        case kIOPCIConfigVendorID:
-        case kIOPCIConfigDeviceID: // OS X does a non-aligned read, which still returns full vendor / device ID
+		case WIOKit::PCIRegister::kIOPCIConfigVendorID:
+        case WIOKit::PCIRegister::kIOPCIConfigDeviceID: // OS X does a non-aligned read, which still returns full vendor / device ID
         {
             UInt32 vendor, device;
             if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
@@ -275,52 +276,54 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 
 void FakeBrcm::hookProvider(IOService *provider)
 {
-    UInt32 value;
-    if (WIOKit::getOSDataValue(provider, "RM,subsystem-id", value) ||
-        WIOKit::getOSDataValue(provider, "RM,subsystem-vendor-id", value) ||
-        WIOKit::getOSDataValue(provider, "RM,device-id", value) ||
-        WIOKit::getOSDataValue(provider, "RM,vendor-id", value))
-    {
-        DBGLOG("BRCMFX", "FakeBrcm::hookProvider - FakePCIID DETECTED!");
-    }
-    
-    void * pcidev = static_cast<void *>(provider);
-    uint64_t * vmt = pcidev ? static_cast<uint64_t **>(pcidev)[0] : nullptr;
-    if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(FakeBrcm::configRead16) && orgConfigRead16 == nullptr)
-    {
-        orgConfigRead16 = reinterpret_cast<t_config_read16>(vmt[VMTOffset::configRead16]);
-        vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(FakeBrcm::configRead16);
-        DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead16 was successful");
-    }
-    
-    if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(FakeBrcm::configRead32) && orgConfigRead32 == nullptr)
-    {
-        orgConfigRead32 = reinterpret_cast<t_config_read32>(vmt[VMTOffset::configRead32]);
-        vmt[VMTOffset::configRead32] = reinterpret_cast<uint64_t>(FakeBrcm::configRead32);
-        DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead32 was successful");
-    }
+	UInt32 value;
+	if (WIOKit::getOSDataValue(provider, "RM,subsystem-id", value) ||
+		WIOKit::getOSDataValue(provider, "RM,subsystem-vendor-id", value) ||
+		WIOKit::getOSDataValue(provider, "RM,device-id", value) ||
+		WIOKit::getOSDataValue(provider, "RM,vendor-id", value))
+	{
+		DBGLOG("BRCMFX", "FakeBrcm::hookProvider - FakePCIID DETECTED!");
+	}
+	
+	if (orgConfigRead16 == nullptr)
+	{
+		if (!KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
+			SYSLOG("BRCMFX", "FakeBrcm::hookProvider routeVirtual failed for configRead16");
+		else
+			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead16 was successful");
+	}
+	
+	if (orgConfigRead32 == nullptr)
+	{
+		if (!KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
+			SYSLOG("BRCMFX", "FakeBrcm::hookProvider routeVirtual failed for configRead32");
+		else
+			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead32 was successful");
+	}
 }
 
 //==============================================================================
 
 void FakeBrcm::unhookProvider()
 {
-    if (service_provider != nullptr)
-    {
-        void * pcidev = static_cast<void *>(service_provider);
-        uint64_t * vmt = pcidev ? static_cast<uint64_t **>(pcidev)[0] : nullptr;
-        if (vmt && vmt[VMTOffset::configRead16] != reinterpret_cast<uint64_t>(orgConfigRead16) && orgConfigRead16 != nullptr)
-        {
-            vmt[VMTOffset::configRead16] = reinterpret_cast<uint64_t>(orgConfigRead16);
-            DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead16 was successful");
-            orgConfigRead16 = nullptr;
-        }
-        
-        if (vmt && vmt[VMTOffset::configRead32] != reinterpret_cast<uint64_t>(orgConfigRead32) && orgConfigRead32 != nullptr)
-        {
-            vmt[VMTOffset::configRead32] = reinterpret_cast<uint64_t>(orgConfigRead32);
-            DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead32 was successful");
-            orgConfigRead32 = nullptr;
-        }
-    }
+	if (service_provider != nullptr)
+	{
+		if (orgConfigRead16 != nullptr)
+		{
+			if (!KernelPatcher::routeVirtual(service_provider, WIOKit::PCIConfigOffset::ConfigRead16, orgConfigRead16))
+				SYSLOG("BRCMFX", "FakeBrcm::unhookProvider routeVirtual failed for configRead16");
+			else
+				DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead16 was successful");
+			orgConfigRead16 = nullptr;
+		}
+		
+		if (orgConfigRead32 != nullptr)
+		{
+			if (!KernelPatcher::routeVirtual(service_provider, WIOKit::PCIConfigOffset::ConfigRead32, orgConfigRead32))
+				SYSLOG("BRCMFX", "FakeBrcm::unhookProvider routeVirtual failed for configRead32");
+			else
+				DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead32 was successful");
+			orgConfigRead32 = nullptr;
+		}
+	}
 }
