@@ -44,4 +44,4 @@ AirportBrcmFixup Changelog
 - XCode 9 & Lilu 1.2.0 compatibility fixes (Lilu 1.2.0 is required)
 
 #### v1.1.1
-- Cosmetic change & Lilu 1.2.3 compatibility fixes
+- Cosmetic change
