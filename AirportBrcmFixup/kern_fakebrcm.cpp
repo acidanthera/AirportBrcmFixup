@@ -10,17 +10,21 @@
 
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
+
+IOService *FakeBrcm::service_this {nullptr};
 IOService *FakeBrcm::service_provider {nullptr};
-OSDictionary *FakeBrcm::service_dict {nullptr};
-OSDictionary *FakeBrcm::prop_table {nullptr};
+bool FakeBrcm::service_found {false};
 FakeBrcm::t_config_read16  FakeBrcm::orgConfigRead16 {nullptr};
 FakeBrcm::t_config_read32  FakeBrcm::orgConfigRead32 {nullptr};
 
 
 //==============================================================================
 
-bool isServiceSupported(IOService* service)
+bool FakeBrcm::isServiceSupported(IOService* service)
 {
+	if (service == service_provider)
+		return true;
+	
     for (int i=0; i<kextListSize; i++)
     {
         if (strcmp(serviceNameList[i], service->getName()) == 0)
@@ -33,6 +37,7 @@ bool isServiceSupported(IOService* service)
 
 bool FakeBrcm::init(OSDictionary *propTable)
 {
+	service_this = this;
     if (config.disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::init(): FakeBrcm disabled");
@@ -47,11 +52,6 @@ bool FakeBrcm::init(OSDictionary *propTable)
         SYSLOG("BRCMFX", "FakeBrcm super::init returned false\n");
         return false;
     }
-    
-    service_dict = OSDictionary::withCapacity(1);
-    
-    if (propTable != nullptr)
-        prop_table = OSDictionary::withDictionary(propTable);
     
     return true;
 }
@@ -82,11 +82,12 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
         SYSLOG("BRCMFX", "FakeBrcm super::probe returned nullptr\n");
         return nullptr;
     }
+	
+	*score = -2000;
 
     if (config.disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe(): FakeBrcm disabled");
-        *score = -2000;
         return ret;
     }
     
@@ -99,20 +100,20 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
         if (meta_class != nullptr)
         {
             DBGLOG("BRCMFX", "FakeBrcm::probe(): meta class for %s exists!", serviceNameList[i]);
-            
+
             IOService *service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
             if (service != nullptr)
             {
                 service->retain();
                 DBGLOG("BRCMFX", "FakeBrcm: retain counter for driver %s is %d", serviceNameList[i], service->getRetainCount());
-                service_dict->setObject(serviceNameList[i], service);
+				service_found = true;
             }
             else
                 SYSLOG("BRCMFX", "FakeBrcm: instance of driver %s couldn't be created", serviceNameList[i]);
         }
     }
-    
-    if (service_dict->getCount() != 0)
+	
+    if (service_found)
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe() will change score from %d to 2000", *score);
         *score = 2000;  // change probe score to be the first in the list
@@ -121,7 +122,6 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe(): fallback to original driver");
         config.disabled = true;
-        *score = -2000;
     }
 
     return ret;
@@ -150,7 +150,7 @@ bool FakeBrcm::start(IOService *provider)
         return false;
     }
     
-    if (!service_dict->getCount())
+    if (!service_found)
     {
         SYSLOG("BRCMFX", "FakeBrcm::start(): fallback to original driver");
         return false;
@@ -168,6 +168,8 @@ void FakeBrcm::stop(IOService *provider)
     DBGLOG("BRCMFX", "FakeBrcm::stop()");
     
     //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
+	
+	service_this = nullptr;
 
     super::stop(provider);
 }
@@ -178,38 +180,9 @@ void FakeBrcm::free()
 {
     DBGLOG("BRCMFX", "FakeBrcm::free()");
     
-    OSSafeReleaseNULL(service_dict);
-    
     //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
 
     super::free();
-}
-
-//==============================================================================
-
-IOService* FakeBrcm::getService(const char* service_name)
-{
-    if (service_dict == nullptr)
-    {
-        DBGLOG("BRCMFX", "FakeBrcm::getService(): no dictionary");
-        return nullptr;
-    }
-    
-    OSObject* object = service_dict->getObject(service_name);
-    if (object == nullptr)
-    {
-        DBGLOG("BRCMFX", "FakeBrcm::getService(): service %s is not found in dictionary", service_name);
-        return nullptr;
-    }
-    
-    IOService* service = OSDynamicCast(IOService, object);
-    if (service == nullptr)
-    {
-        DBGLOG("BRCMFX", "FakeBrcm::getService(): object for service %s can't be casted to IOService", service_name);
-        return nullptr;
-    }
-    
-    return service;
 }
 
 //==============================================================================
@@ -219,7 +192,7 @@ UInt16 FakeBrcm::configRead16(IOService *that, UInt32 space, UInt8 offset)
     UInt16 result = orgConfigRead16(that, space, offset);
     UInt16 newResult = result;
     
-    if (that == service_provider || isServiceSupported(that))
+    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(that))
     switch (offset)
     {
         case WIOKit::PCIRegister::kIOPCIConfigVendorID:
@@ -250,21 +223,16 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 {
     UInt32 result = orgConfigRead32(that, space, offset);
     UInt32 newResult = result;
-    
-    if (that == service_provider || isServiceSupported(that))
-    switch (offset)
-    {
-		case WIOKit::PCIRegister::kIOPCIConfigVendorID:
-        case WIOKit::PCIRegister::kIOPCIConfigDeviceID: // OS X does a non-aligned read, which still returns full vendor / device ID
-        {
-            UInt32 vendor, device;
-            if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
-                newResult = (newResult & 0xFFFF0000) | vendor;
-            if (WIOKit::getOSDataValue(that, "device-id", device))
-                newResult = (device << 16) | (newResult & 0xFFFF);
-            break;
-        }
-    }
+	
+	// OS X does a non-aligned read, which still returns full vendor / device ID
+    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(that))
+	{
+		UInt32 vendor, device;
+		if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
+			newResult = (newResult & 0xFFFF0000) | vendor;
+		if (WIOKit::getOSDataValue(that, "device-id", device))
+			newResult = (device << 16) | (newResult & 0xFFFF);
+	}
     
     if (newResult != result)
         DBGLOG("BRCMFX", "FakeBrcm::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", that->getName(), result, newResult);

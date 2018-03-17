@@ -12,6 +12,10 @@
 #include "kern_fakebrcm.hpp"
 #include "kern_misc.hpp"
 
+#include <IOKit/IOCatalogue.h>
+
+#define kCFBundleIdentifierKey                  "CFBundleIdentifier"
+#define KIOClass                  				"IOClass"
 
 
 // Only used in apple-driven callbacks
@@ -159,57 +163,6 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
     }
     
     return service;
-}
-
-//==============================================================================
-//
-//  Try to start a service
-//
-bool startService(IOService* service, IOService* provider, OSDictionary* prop_table)
-{
-    bool result = false;
-    if (provider == nullptr)
-        provider = service->getProvider();
-    if (provider != nullptr)
-    {
-        if (!service->init(prop_table))
-        {
-            SYSLOG("BRCMFX", "service %s can't be initialized", service->getName());
-            return false;
-        }
-        
-        DBGLOG("BRCMFX", "service name = %s, provider name = %s", service->getName(), provider->getName());
-        if (service->attach(provider))
-        {
-            SInt32 score = 0;
-            IOService *service_to_start = service->probe(provider, &score);
-            service->detach(provider);
-            IOSleep(300);
-            if (service_to_start != nullptr)
-            {
-                service_to_start->retain();
-                if (service_to_start->attach(provider))
-                {
-                    result = service_to_start->start(provider);
-                    if (!result)
-                    {
-                        SYSLOG("BRCMFX", "service %s can't be started", service_to_start->getName());
-                        service->detach( provider );
-                    }
-                }
-                else
-                    SYSLOG("BRCMFX", "service %s can't be attached to provider", service_to_start->getName());
-                service_to_start->release();
-            }
-            else
-                SYSLOG("BRCMFX", "service %s probe returned null", service->getName());
-        }
-        else
-            SYSLOG("BRCMFX", "service %s can't be attached to provider %s", service->getName(), provider->getName());
-    }
-    else
-        SYSLOG("BRCMFX", "service %s doesn't have provider", service->getName());
-    return result;
 }
 
 /*******************************************************************************
@@ -387,20 +340,35 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     
                     wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level"));
                     wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2"));
-                    
-                    config.disabled = true;
-                    
-                    IOService* service = FakeBrcm::getService(serviceNameList[i]);
-                    if (service == nullptr)
-                    {
-                        SYSLOG("BRCMFX", "instance of driver %s couldn't be found", serviceNameList[i]);
-                        break;
-                    }
-
-                    if (startService(service, FakeBrcm::getServiceProvider(), FakeBrcm::getPropTable()))
-                    {
-                        SYSLOG("BRCMFX", "service %s successfully started", service->getName());
-                    }
+					
+					if (FakeBrcm::getServiceThis() && FakeBrcm::getServiceProvider())
+					{
+						IOService *service  = FakeBrcm::getServiceThis();
+						IOService *provider = FakeBrcm::getServiceProvider();
+						auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
+						auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
+						
+						service->stop(provider);
+						bool success = service->terminate();
+						DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
+						
+						if (provider->isOpen(service))
+						{
+							provider->close(service);
+							DBGLOG("BRCMFX", "FakeBrcm was closed");
+						}
+						
+						if (success && bundle && ioclass)
+						{
+							OSDictionary * personality = OSDictionary::withCapacity(1);
+							personality->setObject(kCFBundleIdentifierKey, bundle);
+							personality->setObject(KIOClass, ioclass);
+							if (!gIOCatalogue->removeDrivers(personality, true))
+								SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
+							else
+								DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
+						}
+					}
 
                     break;
                 }

@@ -45,3 +45,6 @@ AirportBrcmFixup Changelog
 
 #### v1.1.1
 - Cosmetic change
+
+#### v1.1.2
+- FakeBrcm is destroyed & removed from ioreg, there is no need to start original ariport driver, gIOCatalogue->removeDrivers called for FakeBrcm does this.
