@@ -11,33 +11,15 @@
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
 
-IOService *FakeBrcm::service_this {nullptr};
 IOService *FakeBrcm::service_provider {nullptr};
 bool FakeBrcm::service_found {false};
 FakeBrcm::t_config_read16  FakeBrcm::orgConfigRead16 {nullptr};
 FakeBrcm::t_config_read32  FakeBrcm::orgConfigRead32 {nullptr};
 
-
-//==============================================================================
-
-bool FakeBrcm::isServiceSupported(IOService* service)
-{
-	if (service == service_provider)
-		return true;
-	
-    for (int i=0; i<kextListSize; i++)
-    {
-        if (strcmp(serviceNameList[i], service->getName()) == 0)
-            return true;
-    }
-    return false;
-}
-
 //==============================================================================
 
 bool FakeBrcm::init(OSDictionary *propTable)
 {
-	service_this = this;
     if (config.disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::init(): FakeBrcm disabled");
@@ -59,7 +41,8 @@ bool FakeBrcm::init(OSDictionary *propTable)
 //==============================================================================
 
 bool FakeBrcm::attach(IOService *provider)
-{  
+{
+	service_provider = provider;
     hookProvider(provider);
     
     return super::attach(provider);
@@ -90,8 +73,7 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
         DBGLOG("BRCMFX", "FakeBrcm::probe(): FakeBrcm disabled");
         return ret;
     }
-    
-    service_provider = provider;
+	
     DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", provider->getName());
     
     for (int i=0; i<kextListSize; i++)
@@ -121,7 +103,6 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
     else
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe(): fallback to original driver");
-        config.disabled = true;
     }
 
     return ret;
@@ -155,7 +136,8 @@ bool FakeBrcm::start(IOService *provider)
         SYSLOG("BRCMFX", "FakeBrcm::start(): fallback to original driver");
         return false;
     }
-    
+	
+	service_provider = provider;
     hookProvider(provider);
 
     return true;
@@ -166,11 +148,6 @@ bool FakeBrcm::start(IOService *provider)
 void FakeBrcm::stop(IOService *provider)
 {
     DBGLOG("BRCMFX", "FakeBrcm::stop()");
-    
-    //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
-	
-	service_this = nullptr;
-
     super::stop(provider);
 }
 
@@ -179,10 +156,23 @@ void FakeBrcm::stop(IOService *provider)
 void FakeBrcm::free()
 {
     DBGLOG("BRCMFX", "FakeBrcm::free()");
-    
-    //unhookProvider();     // we don't need to unhook provider, FakeID can still be used
-
     super::free();
+}
+
+
+//==============================================================================
+
+bool FakeBrcm::isServiceSupported(IOService* service)
+{
+	if (service == service_provider)
+		return true;
+	
+	for (int i=0; i<kextListSize; i++)
+	{
+		if (strcmp(serviceNameList[i], service->getName()) == 0)
+			return true;
+	}
+	return false;
 }
 
 //==============================================================================
@@ -244,54 +234,12 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 
 void FakeBrcm::hookProvider(IOService *provider)
 {
-	UInt32 value;
-	if (WIOKit::getOSDataValue(provider, "RM,subsystem-id", value) ||
-		WIOKit::getOSDataValue(provider, "RM,subsystem-vendor-id", value) ||
-		WIOKit::getOSDataValue(provider, "RM,device-id", value) ||
-		WIOKit::getOSDataValue(provider, "RM,vendor-id", value))
-	{
-		DBGLOG("BRCMFX", "FakeBrcm::hookProvider - FakePCIID DETECTED!");
-	}
-	
 	if (orgConfigRead16 == nullptr)
-	{
-		if (!KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
-			SYSLOG("BRCMFX", "FakeBrcm::hookProvider routeVirtual failed for configRead16");
-		else
+		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
 			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead16 was successful");
-	}
 	
 	if (orgConfigRead32 == nullptr)
-	{
-		if (!KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
-			SYSLOG("BRCMFX", "FakeBrcm::hookProvider routeVirtual failed for configRead32");
-		else
+		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
 			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead32 was successful");
-	}
 }
 
-//==============================================================================
-
-void FakeBrcm::unhookProvider()
-{
-	if (service_provider != nullptr)
-	{
-		if (orgConfigRead16 != nullptr)
-		{
-			if (!KernelPatcher::routeVirtual(service_provider, WIOKit::PCIConfigOffset::ConfigRead16, orgConfigRead16))
-				SYSLOG("BRCMFX", "FakeBrcm::unhookProvider routeVirtual failed for configRead16");
-			else
-				DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead16 was successful");
-			orgConfigRead16 = nullptr;
-		}
-		
-		if (orgConfigRead32 != nullptr)
-		{
-			if (!KernelPatcher::routeVirtual(service_provider, WIOKit::PCIConfigOffset::ConfigRead32, orgConfigRead32))
-				SYSLOG("BRCMFX", "FakeBrcm::unhookProvider routeVirtual failed for configRead32");
-			else
-				DBGLOG("BRCMFX", "FakeBrcm::unhookProvider for configRead32 was successful");
-			orgConfigRead32 = nullptr;
-		}
-	}
-}

@@ -9,7 +9,6 @@
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
-#include "kern_fakebrcm.hpp"
 #include "kern_misc.hpp"
 
 #include <IOKit/IOCatalogue.h>
@@ -82,14 +81,10 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
         const char *new_country_code = config.country_code;
-        if (!config.country_code_overrided && FakeBrcm::getServiceProvider())
+        if (!config.country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
         {
-            OSData* data = OSDynamicCast(OSData, FakeBrcm::getServiceProvider()->getProperty(config.bootargBrcmCountry));
-            if (data)
-            {
-                new_country_code = reinterpret_cast<const char *>(data->getBytesNoCopy());
-                DBGLOG("BRCMFX", "country code is overrided in ioreg");
-            }
+			new_country_code = callbackBRCMFX->provider_country_code;
+			DBGLOG("BRCMFX", "country code is overrided in ioreg");
         }
         
         a3 = -1;
@@ -114,16 +109,26 @@ bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
     bool result = false;
-    DBGLOG("BRCMFX", "start is called");
-    
-    if (callbackBRCMFX && callbackBRCMFX->wl_msg_level && config.wl_msg_level != 0)
-        *callbackBRCMFX->wl_msg_level = config.wl_msg_level;
-    
-    if (callbackBRCMFX && callbackBRCMFX->wl_msg_level2 && config.wl_msg_level2 != 0)
-        *callbackBRCMFX->wl_msg_level2 = config.wl_msg_level2;
+    DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
+	
+	if (callbackBRCMFX && callbackPatcher)
+	{
+		if (callbackBRCMFX->wl_msg_level && config.wl_msg_level != 0)
+			*callbackBRCMFX->wl_msg_level = config.wl_msg_level;
+		
+		if (callbackBRCMFX->wl_msg_level2 && config.wl_msg_level2 != 0)
+			*callbackBRCMFX->wl_msg_level2 = config.wl_msg_level2;
+		
+		auto data = OSDynamicCast(OSData, provider->getProperty(config.bootargBrcmCountry));
+		if (data)
+		{
+			lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
+			DBGLOG("BRCMFX", "brcmfx-country in ioreg is set to %s", callbackBRCMFX->provider_country_code);
+		}
 
-    if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgStart)
-        result = callbackBRCMFX->orgStart(service, provider);
+		if (callbackPatcher && callbackBRCMFX->orgStart)
+			result = callbackBRCMFX->orgStart(service, provider);
+	}
     
     return result;
 }
@@ -341,13 +346,17 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level"));
                     wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2"));
 					
-					if (FakeBrcm::getServiceThis() && FakeBrcm::getServiceProvider())
+					config.disabled = true;
+					
+					IOService *service  = findService(gIOServicePlane,"FakeBrcm");
+					if (service && service->getProvider() != nullptr)
 					{
-						IOService *service  = FakeBrcm::getServiceThis();
-						IOService *provider = FakeBrcm::getServiceProvider();
 						auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
 						auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
+						bundle  = bundle  ? bundle->withString(bundle)   : nullptr;
+						ioclass = ioclass ? ioclass->withString(ioclass) : nullptr;
 						
+						IOService *provider = service->getProvider();
 						service->stop(provider);
 						bool success = service->terminate();
 						DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
@@ -360,14 +369,25 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 						
 						if (success && bundle && ioclass)
 						{
-							OSDictionary * personality = OSDictionary::withCapacity(1);
-							personality->setObject(kCFBundleIdentifierKey, bundle);
-							personality->setObject(KIOClass, ioclass);
-							if (!gIOCatalogue->removeDrivers(personality, true))
+							OSDictionary * dict = OSDictionary::withCapacity(2);
+							dict->setObject(kCFBundleIdentifierKey, bundle);
+							dict->setObject(KIOClass, ioclass);
+							if (!gIOCatalogue->removeDrivers(dict, true))
 								SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
 							else
 								DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
+							OSSafeReleaseNULL(dict);
 						}
+					}
+					else
+					{
+						OSDictionary* dict = OSDictionary::withCapacity(1);
+						dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
+						if (!gIOCatalogue->startMatching(dict))
+							SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
+						else
+							DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
+						OSSafeReleaseNULL(dict);
 					}
 
                     break;

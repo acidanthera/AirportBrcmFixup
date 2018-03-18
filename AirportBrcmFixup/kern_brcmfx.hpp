@@ -11,7 +11,6 @@
 #include <Headers/kern_patcher.hpp>
 #include <Library/LegacyIOService.h>
 
-
 class BRCMFX {
 public:
 	bool init();
@@ -58,6 +57,7 @@ private:
     t_wlc_set_countrycode_rev   orgWlcSetCountryCodeRev     {nullptr};
     int32_t*                    wl_msg_level                {nullptr};
     int32_t*                    wl_msg_level2               {nullptr};
+	char 						provider_country_code[5] 	{""};
     
 public:
     /**
