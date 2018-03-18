@@ -1,20 +1,22 @@
 #include <Library/LegacyIOService.h>
-#include <Headers/plugin_start.hpp>
-#include <Headers/kern_api.hpp>
 #include <Headers/kern_iokit.hpp>
+#include <Headers/plugin_start.hpp>
+//#include <Headers/kern_api.hpp>
 #include <Headers/kern_patcher.hpp>
 
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
 #include "kern_misc.hpp"
 
+
+
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
 
 IOService *FakeBrcm::service_provider {nullptr};
 bool FakeBrcm::service_found {false};
-FakeBrcm::t_config_read16  FakeBrcm::orgConfigRead16 {nullptr};
-FakeBrcm::t_config_read32  FakeBrcm::orgConfigRead32 {nullptr};
+WIOKit::t_PCIConfigRead16  FakeBrcm::orgConfigRead16 {nullptr};
+WIOKit::t_PCIConfigRead32  FakeBrcm::orgConfigRead32 {nullptr};
 
 //==============================================================================
 
@@ -162,7 +164,7 @@ void FakeBrcm::free()
 
 //==============================================================================
 
-bool FakeBrcm::isServiceSupported(IOService* service)
+bool FakeBrcm::isServiceSupported(IORegistryEntry* service)
 {
 	if (service == service_provider)
 		return true;
@@ -177,55 +179,55 @@ bool FakeBrcm::isServiceSupported(IOService* service)
 
 //==============================================================================
 
-UInt16 FakeBrcm::configRead16(IOService *that, UInt32 space, UInt8 offset)
+UInt16 FakeBrcm::configRead16(IORegistryEntry *service, UInt32 space, UInt8 offset)
 {
-    UInt16 result = orgConfigRead16(that, space, offset);
+    UInt16 result = orgConfigRead16(service, space, offset);
     UInt16 newResult = result;
     
-    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(that))
+    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
     switch (offset)
     {
         case WIOKit::PCIRegister::kIOPCIConfigVendorID:
         {
             UInt32 vendor;
-            if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
+            if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
                 newResult = vendor;
             break;
         }
         case WIOKit::PCIRegister::kIOPCIConfigDeviceID:
         {
             UInt32 device;
-            if (WIOKit::getOSDataValue(that, "device-id", device))
+            if (WIOKit::getOSDataValue(service, "device-id", device))
                 newResult = device;
             break;
         }
     }
     
     if (newResult != result)
-        DBGLOG("BRCMFX", "FakeBrcm::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", that->getName(), result, newResult);
+        DBGLOG("BRCMFX", "FakeBrcm::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", service->getName(), result, newResult);
 
     return newResult;
 }
 
 //==============================================================================
 
-UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
+UInt32 FakeBrcm::configRead32(IORegistryEntry *service, UInt32 space, UInt8 offset)
 {
-    UInt32 result = orgConfigRead32(that, space, offset);
+    UInt32 result = orgConfigRead32(service, space, offset);
     UInt32 newResult = result;
 	
 	// OS X does a non-aligned read, which still returns full vendor / device ID
-    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(that))
+    if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
 	{
 		UInt32 vendor, device;
-		if (WIOKit::getOSDataValue(that, "vendor-id", vendor))
+		if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
 			newResult = (newResult & 0xFFFF0000) | vendor;
-		if (WIOKit::getOSDataValue(that, "device-id", device))
+		if (WIOKit::getOSDataValue(service, "device-id", device))
 			newResult = (device << 16) | (newResult & 0xFFFF);
 	}
     
     if (newResult != result)
-        DBGLOG("BRCMFX", "FakeBrcm::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", that->getName(), result, newResult);
+        DBGLOG("BRCMFX", "FakeBrcm::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", service->getName(), result, newResult);
     
     return newResult;
 }
@@ -234,6 +236,17 @@ UInt32 FakeBrcm::configRead32(IOService *that, UInt32 space, UInt8 offset)
 
 void FakeBrcm::hookProvider(IOService *provider)
 {
+	UInt32 vendor, device;
+	if (WIOKit::getOSDataValue(provider, "device-id", device) && WIOKit::getOSDataValue(provider, "vendor-id", vendor))
+	{
+		if (WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigDeviceID) == device &&
+			WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigVendorID) == vendor)
+		{
+			DBGLOG("BRCMFX", "FakeBrcm::hookProvider: hook is not required since vendor-id && device-id are the same");
+			return;
+		}
+	}
+	
 	if (orgConfigRead16 == nullptr)
 		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
 			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead16 was successful");
