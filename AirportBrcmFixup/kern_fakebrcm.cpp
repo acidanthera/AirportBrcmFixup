@@ -22,7 +22,7 @@ WIOKit::t_PCIConfigRead32  FakeBrcm::orgConfigRead32 {nullptr};
 
 bool FakeBrcm::init(OSDictionary *propTable)
 {
-    if (config.disabled)
+    if (ADDPR(brcmfx_config).disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::init(): FakeBrcm disabled");
         return false;
@@ -70,7 +70,7 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	
 	*score = -2000;
 
-    if (config.disabled)
+    if (ADDPR(brcmfx_config).disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::probe(): FakeBrcm disabled");
         return ret;
@@ -121,7 +121,7 @@ bool FakeBrcm::start(IOService *provider)
 		return nullptr;
 	}
 
-    if (config.disabled)
+    if (ADDPR(brcmfx_config).disabled)
     {
         DBGLOG("BRCMFX", "FakeBrcm::start(): FakeBrcm disabled");
         return false;

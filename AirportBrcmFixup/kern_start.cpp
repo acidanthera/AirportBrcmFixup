@@ -31,7 +31,7 @@ const char *Configuration::bootargWlanMsgLevel2  {"wl_msg_level2"};      // mess
 const char *Configuration::bootargBrcmEnableWowl {"-brcmfxwowl"};        // enable WOWL 
 
 
-Configuration config;
+Configuration ADDPR(brcmfx_config);
 
 
 void Configuration::readArguments() {
@@ -45,7 +45,7 @@ void Configuration::readArguments() {
         wl_msg_level2 = 0;
     
     char tmp[16];
-    disabled = PE_parse_boot_argn(config.bootargOff[0], tmp, sizeof(tmp));
+    disabled = PE_parse_boot_argn(ADDPR(brcmfx_config).bootargOff[0], tmp, sizeof(tmp));
     enable_wowl = PE_parse_boot_argn(bootargBrcmEnableWowl, tmp, sizeof(tmp));
 }
 
@@ -55,16 +55,16 @@ PluginConfiguration ADDPR(config) {
 	xStringify(PRODUCT_NAME),
     parseModuleVersion(xStringify(MODULE_VERSION)),
     LiluAPI::AllowNormal | LiluAPI::AllowInstallerRecovery | LiluAPI::AllowSafeMode,
-	config.bootargOff,
-	arrsize(config.bootargOff),
-	config.bootargDebug,
-	arrsize(config.bootargDebug),
-	config.bootargBeta,
-	arrsize(config.bootargBeta),
+	ADDPR(brcmfx_config).bootargOff,
+	arrsize(ADDPR(brcmfx_config).bootargOff),
+	ADDPR(brcmfx_config).bootargDebug,
+	arrsize(ADDPR(brcmfx_config).bootargDebug),
+	ADDPR(brcmfx_config).bootargBeta,
+	arrsize(ADDPR(brcmfx_config).bootargBeta),
 	KernelVersion::MountainLion,
 	KernelVersion::HighSierra,
 	[]() {
-        config.readArguments();
+        ADDPR(brcmfx_config).readArguments();
 		brcmfx.init();
 	}
 };

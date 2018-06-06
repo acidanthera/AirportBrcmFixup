@@ -48,3 +48,8 @@ AirportBrcmFixup Changelog
 
 #### v1.1.2
 - FakeBrcm is destroyed & removed from ioreg, there is no need to start original ariport driver, gIOCatalogue->removeDrivers called for FakeBrcm does this.
+
+#### v1.1.3
+- Allow to load all matched drivers for broadcom wi-fi (in case if there is a concurrency), except AirPortBrcmNIC-MFG.kext
+- AirPortBrcmNIC-MFG probe & start are hooked to prevent using of this driver
+- Fix a name conflict for config variable

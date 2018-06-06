@@ -28,6 +28,9 @@ static KernelPatcher::KextInfo kextList[kextListSize] {
 };
 
 
+// progress
+static bool kext_handled[kextListSize] {};
+
 //==============================================================================
 
 bool BRCMFX::init()
@@ -80,8 +83,8 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
     DBGLOG("BRCMFX", "wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
     if (callbackBRCMFX && callbackPatcher && callbackBRCMFX->orgWlcSetCountryCodeRev)
     {
-        const char *new_country_code = config.country_code;
-        if (!config.country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
+        const char *new_country_code = ADDPR(brcmfx_config).country_code;
+        if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
         {
 			new_country_code = callbackBRCMFX->provider_country_code;
 			DBGLOG("BRCMFX", "country code is overrided in ioreg");
@@ -113,13 +116,13 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	
 	if (callbackBRCMFX && callbackPatcher)
 	{
-		if (callbackBRCMFX->wl_msg_level && config.wl_msg_level != 0)
-			*callbackBRCMFX->wl_msg_level = config.wl_msg_level;
+		if (callbackBRCMFX->wl_msg_level && ADDPR(brcmfx_config).wl_msg_level != 0)
+			*callbackBRCMFX->wl_msg_level = ADDPR(brcmfx_config).wl_msg_level;
 		
-		if (callbackBRCMFX->wl_msg_level2 && config.wl_msg_level2 != 0)
-			*callbackBRCMFX->wl_msg_level2 = config.wl_msg_level2;
+		if (callbackBRCMFX->wl_msg_level2 && ADDPR(brcmfx_config).wl_msg_level2 != 0)
+			*callbackBRCMFX->wl_msg_level2 = ADDPR(brcmfx_config).wl_msg_level2;
 		
-		auto data = OSDynamicCast(OSData, provider->getProperty(config.bootargBrcmCountry));
+		auto data = OSDynamicCast(OSData, provider->getProperty(ADDPR(brcmfx_config).bootargBrcmCountry));
 		if (data)
 		{
 			lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
@@ -131,6 +134,22 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	}
     
     return result;
+}
+
+//==============================================================================
+
+bool BRCMFX::start_mfg(IOService *service, IOService* provider)
+{
+    DBGLOG("BRCMFX", "start_mfg is called, service name is %s, provider name is %s", service->getName(), provider->getName());
+    return false;
+}
+
+//==============================================================================
+
+IOService* BRCMFX::probe_mfg(IOService *service, IOService * provider, SInt32 *score)
+{
+    DBGLOG("BRCMFX", "probe_mfg is called");
+    return nullptr;
 }
 
 //==============================================================================
@@ -224,29 +243,54 @@ static const uint8_t si_pmu_fvco_pllreg_opcodes[] = {
 
 void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size)
 {
-    if (progressState != ProcessingState::EverythingDone)
+    for (size_t i = 0; i < kextListSize; i++)
     {
-        for (size_t i = 0; i < kextListSize; i++)
+        if (kextList[i].loadIndex == index && !kext_handled[i])
         {
-            if (kextList[i].loadIndex == index)
+            kext_handled[i] = true;
+            
+            while (true)
             {
-                while (!(progressState & ProcessingState::BRCMPatched))
+                DBGLOG("BRCMFX", "found %s", idList[i]);
+                
+                // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
+                IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
+                if (running_service != nullptr)
                 {
-                    progressState |= ProcessingState::BRCMPatched;
-                    
-                    DBGLOG("BRCMFX", "found %s", idList[i]);
-                    
-                    // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
-                    IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
-                    if (running_service != nullptr)
+                    SYSLOG("BRCMFX", "%s driver is already loaded, too late to do patching", serviceNameList[i]);
+                    break;
+                }
+                
+                // Failed PCIe configuration (device-id checking)
+                const char *method_name = symbolList[i][0];
+                auto method_address = patcher.solveSymbol(index, method_name, address, size);
+                if (method_address) {
+                    DBGLOG("BRCMFX", "obtained %s", method_name);
+                    patcher.clearError();
+                    if (i != 0)
+                        orgStart = reinterpret_cast<t_start>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(start), true));
+                    else
                     {
-                        SYSLOG("BRCMFX", "%s driver is already loaded, too late to do patching", serviceNameList[i]);
-                        break;
+                        patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(start_mfg), true);
+                        auto probe_method_address = patcher.solveSymbol(index, "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", address, size);
+                        if (probe_method_address)
+                            patcher.routeFunction(probe_method_address, reinterpret_cast<mach_vm_address_t>(probe_mfg));
                     }
-
+                        
+                    if (patcher.getError() == KernelPatcher::Error::NoError) {
+                        DBGLOG("BRCMFX", "routed %s", method_name);
+                    } else {
+                        SYSLOG("BRCMFX", "failed to route %s", method_name);
+                    }
+                } else {
+                    SYSLOG("BRCMFX", "failed to resolve %s", method_name);
+                }
+                
+                if (i != 0)
+                {
                     // Chip identificator checking patch
-                    const char *method_name = symbolList[i][0];
-                    auto method_address = patcher.solveSymbol(index, method_name);
+                    method_name = symbolList[i][1];
+                    method_address = patcher.solveSymbol(index, method_name, address, size);
                     if (method_address) {
                         DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
@@ -261,8 +305,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     }
                     
                     // Wi-Fi 5 Ghz/Country code patch (required for 10.11)
-                    method_name = symbolList[i][1];
-                    method_address = patcher.solveSymbol(index, method_name);
+                    method_name = symbolList[i][2];
+                    method_address = patcher.solveSymbol(index, method_name, address, size);
                     if (method_address) {
                         DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
@@ -277,8 +321,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     }
                     
                     // Third party device patch
-                    method_name = symbolList[i][2];
-                    method_address = patcher.solveSymbol(index, method_name);
+                    method_name = symbolList[i][3];
+                    method_address = patcher.solveSymbol(index, method_name, address, size);
                     if (method_address) {
                         DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
@@ -293,8 +337,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     }
                     
                     // White list restriction patch
-                    method_name = symbolList[i][3];
-                    method_address = patcher.solveSymbol(index, method_name);
+                    method_name = symbolList[i][4];
+                    method_address = patcher.solveSymbol(index, method_name, address, size);
                     if (method_address) {
                         DBGLOG("BRCMFX", "obtained %s", method_name);
                         patcher.clearError();
@@ -308,27 +352,11 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
                     
-                    // Failed PCIe configuration (device-id checking)
-                    method_name = symbolList[i][4];
-                    method_address = patcher.solveSymbol(index, method_name);
-                    if (method_address) {
-                        DBGLOG("BRCMFX", "obtained %s", method_name);
-                        patcher.clearError();
-                        orgStart = reinterpret_cast<t_start>(patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(start), true));
-                        if (patcher.getError() == KernelPatcher::Error::NoError) {
-                            DBGLOG("BRCMFX", "routed %s", method_name);
-                        } else {
-                            SYSLOG("BRCMFX", "failed to route %s", method_name);
-                        }
-                    } else {
-                        SYSLOG("BRCMFX", "failed to resolve %s", method_name);
-                    }
-                    
                     // Disable WOWL (WoWLAN)
-                    if (!config.enable_wowl)
+                    if (!ADDPR(brcmfx_config).enable_wowl)
                     {
                         method_name = symbolList[i][5];
-                        method_address = patcher.solveSymbol(index, method_name);
+                        method_address = patcher.solveSymbol(index, method_name, address, size);
                         if (method_address) {
                             DBGLOG("BRCMFX", "obtained %s", method_name);
                             patcher.clearError();
@@ -343,55 +371,55 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         }
                     }
                     
-                    wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level"));
-                    wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2"));
-					
-					config.disabled = true;
-					
-					IOService *service  = findService(gIOServicePlane,"FakeBrcm");
-					if (service && service->getProvider() != nullptr)
-					{
-						auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
-						auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
-						bundle  = bundle  ? bundle->withString(bundle)   : nullptr;
-						ioclass = ioclass ? ioclass->withString(ioclass) : nullptr;
-						
-						IOService *provider = service->getProvider();
-						service->stop(provider);
-						bool success = service->terminate();
-						DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-						
-						if (provider->isOpen(service))
-						{
-							provider->close(service);
-							DBGLOG("BRCMFX", "FakeBrcm was closed");
-						}
-						
-						if (success && bundle && ioclass)
-						{
-							OSDictionary * dict = OSDictionary::withCapacity(2);
-							dict->setObject(kCFBundleIdentifierKey, bundle);
-							dict->setObject(KIOClass, ioclass);
-							if (!gIOCatalogue->removeDrivers(dict, true))
-								SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
-							else
-								DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
-							OSSafeReleaseNULL(dict);
-						}
-					}
-					else
-					{
-						OSDictionary* dict = OSDictionary::withCapacity(1);
-						dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
-						if (!gIOCatalogue->startMatching(dict))
-							SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
-						else
-							DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
-						OSSafeReleaseNULL(dict);
-					}
-
-                    break;
+                    wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level", address, size));
+                    wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2", address, size));
                 }
+                
+                ADDPR(brcmfx_config).disabled = true;
+                
+                IOService *service  = findService(gIOServicePlane,"FakeBrcm");
+                if (service && service->getProvider() != nullptr)
+                {
+                    auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
+                    auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
+                    bundle  = bundle  ? bundle->withString(bundle)   : nullptr;
+                    ioclass = ioclass ? ioclass->withString(ioclass) : nullptr;
+                    
+                    IOService *provider = service->getProvider();
+                    service->stop(provider);
+                    bool success = service->terminate();
+                    DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
+                    
+                    if (provider->isOpen(service))
+                    {
+                        provider->close(service);
+                        DBGLOG("BRCMFX", "FakeBrcm was closed");
+                    }
+                    
+                    if (success && bundle && ioclass)
+                    {
+                        OSDictionary * dict = OSDictionary::withCapacity(2);
+                        dict->setObject(kCFBundleIdentifierKey, bundle);
+                        dict->setObject(KIOClass, ioclass);
+                        if (!gIOCatalogue->removeDrivers(dict, true))
+                            SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
+                        else
+                            DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
+                        OSSafeReleaseNULL(dict);
+                    }
+                }
+                else
+                {
+                    OSDictionary* dict = OSDictionary::withCapacity(1);
+                    dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
+                    if (!gIOCatalogue->startMatching(dict))
+                        SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
+                    else
+                        DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
+                    OSSafeReleaseNULL(dict);
+                }
+
+                break;
             }
         }
     }

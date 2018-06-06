@@ -32,7 +32,7 @@ private:
      *  start func type
      */
     using t_start = bool (*)(IOService *, IOService *);
- 
+
     /**
      *  wlc_set_countrycode_rev func type
      */
@@ -42,10 +42,11 @@ private:
 	/**
 	 *  Hooked methods / callbacks
 	 */
+    static bool             start(IOService *service, IOService* provider);
+    static bool             start_mfg(IOService *service, IOService* provider);
+    static IOService*       probe_mfg(IOService *service, IOService * provider, SInt32 *score);
     static const OSSymbol*  newVendorString(void);
     static bool             checkBoardId(const char *boardID);
-    static bool             start(IOService *service, IOService* provider);
-    static UInt16           configRead16(IOService *that, UInt32 bits, UInt8 offset);
     static int64_t          wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3);
     static bool             wlc_wowl_enable(int64_t **a1);
 
@@ -58,19 +59,6 @@ private:
     int32_t*                    wl_msg_level                {nullptr};
     int32_t*                    wl_msg_level2               {nullptr};
 	char 						provider_country_code[5] 	{""};
-    
-public:
-    /**
-     *  Current progress mask
-     */
-    struct ProcessingState {
-        enum {
-            NothingReady        = 0,
-            BRCMPatched         = 1,
-            EverythingDone      = BRCMPatched
-        };
-    };
-    int progressState {ProcessingState::NothingReady};
 };
 
 #endif /* kern_brcmfx_hpp */
