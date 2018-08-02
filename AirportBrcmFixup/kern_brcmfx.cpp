@@ -41,12 +41,12 @@ bool BRCMFX::init()
                                                callbackPatcher = &patcher;
                                                callbackBRCMFX->processKext(patcher, index, address, size);
                                            }, this);
-    
+
     if (error != LiluAPI::Error::NoError) {
         SYSLOG("BRCMFX", "failed to register onKextLoad method %d", error);
         return false;
     }
-    
+
 	return true;
 }
 
@@ -89,13 +89,13 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 			new_country_code = callbackBRCMFX->provider_country_code;
 			DBGLOG("BRCMFX", "country code is overrided in ioreg");
         }
-        
+
         a3 = -1;
         result = callbackBRCMFX->orgWlcSetCountryCodeRev(a1, new_country_code, a3);
         DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
         IOSleep(100);
     }
-    
+
     return result;
 }
 
@@ -113,15 +113,15 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 {
     bool result = false;
     DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
-	
+
 	if (callbackBRCMFX && callbackPatcher)
 	{
 		if (callbackBRCMFX->wl_msg_level && ADDPR(brcmfx_config).wl_msg_level != 0)
 			*callbackBRCMFX->wl_msg_level = ADDPR(brcmfx_config).wl_msg_level;
-		
+
 		if (callbackBRCMFX->wl_msg_level2 && ADDPR(brcmfx_config).wl_msg_level2 != 0)
 			*callbackBRCMFX->wl_msg_level2 = ADDPR(brcmfx_config).wl_msg_level2;
-		
+
 		auto data = OSDynamicCast(OSData, provider->getProperty(ADDPR(brcmfx_config).bootargBrcmCountry));
 		if (data)
 		{
@@ -132,7 +132,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		if (callbackPatcher && callbackBRCMFX->orgStart)
 			result = callbackBRCMFX->orgStart(service, provider);
 	}
-    
+
     return result;
 }
 
@@ -153,6 +153,27 @@ IOService* BRCMFX::probe_mfg(IOService *service, IOService * provider, SInt32 *s
 }
 
 //==============================================================================
+
+void BRCMFX::osl_panic(const char *format, ...)
+{
+	if (!strcmp(format, "32KHz LPO Clock not running"))
+	{
+		// Ignore LPO panic!
+		return;
+	}
+	
+	char buf[0x800];
+	memset(buf, 0, sizeof(buf));
+	
+	va_list va;
+	va_start(va, format);
+	vsnprintf(buf, sizeof(buf), format, va);
+	va_end(va);
+	
+	panic("\"%s\"@/BuildRoot/Library/Caches/com.apple.xbs/Sources/AirPortDriverBrcmNIC/AirPortDriverBrcmNIC-1241.31.1.9/src/shared/macosx_osl.cpp:2029", buf);
+}
+
+//==============================================================================
 //
 // Find service by name in a specified registry plane (gIO80211FamilyPlane or gIOServicePlane)
 //
@@ -161,7 +182,7 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
     IOService            * service = 0;
     IORegistryIterator   * iter = IORegistryIterator::iterateOver(plane, kIORegistryIterateRecursively);
     OSOrderedSet         * all = 0;
-    
+
     if ( iter)
     {
         do
@@ -172,7 +193,7 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
         }
         while (!iter->isValid());
         iter->release();
-        
+
         if (all)
         {
             while ((service = OSDynamicCast(IOService, all->getFirstObject())))
@@ -181,11 +202,11 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
                 if (strcmp(service->getName(), service_name) == 0)
                     break;
             }
-            
+
             all->release();
         }
     }
-    
+
     return service;
 }
 
@@ -207,7 +228,7 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
 // - restore rcx and rdi
 // - set the stored value at [rdi+0x3c]
 // - return to the caller (_wlc_proxd_attach or _pdburst_collection)
- 
+
  Assembler wrapper for calling _si_pmu_fvco_pllreg:
  00000000000000 57                     push       rdi                       // entry point, when _wlc_proxd_attach calls _si_pmu_fvco_pllreg, we are here
  00000000000001 8B4F3C                 mov        ecx, dword [rdi+0x3c]
@@ -248,11 +269,11 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
         if (kextList[i].loadIndex == index && !kext_handled[i])
         {
             kext_handled[i] = true;
-            
+
             while (true)
             {
                 DBGLOG("BRCMFX", "found %s", idList[i]);
-                
+
                 // IOServicePlane should keep a pointer to broadcom driver only if it was successfully started
                 IOService* running_service = findService(gIOServicePlane, serviceNameList[i]);
                 if (running_service != nullptr)
@@ -260,7 +281,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     SYSLOG("BRCMFX", "%s driver is already loaded, too late to do patching", serviceNameList[i]);
                     break;
                 }
-                
+
                 // Failed PCIe configuration (device-id checking)
                 const char *method_name = symbolList[i][0];
                 auto method_address = patcher.solveSymbol(index, method_name, address, size);
@@ -276,7 +297,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                         if (probe_method_address)
                             patcher.routeFunction(probe_method_address, reinterpret_cast<mach_vm_address_t>(probe_mfg));
                     }
-                        
+
                     if (patcher.getError() == KernelPatcher::Error::NoError) {
                         DBGLOG("BRCMFX", "routed %s", method_name);
                     } else {
@@ -285,7 +306,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                 } else {
                     SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                 }
-                
+
                 if (i != 0)
                 {
                     // Chip identificator checking patch
@@ -303,7 +324,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     } else {
                         SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
-                    
+
                     // Wi-Fi 5 Ghz/Country code patch (required for 10.11)
                     method_name = symbolList[i][2];
                     method_address = patcher.solveSymbol(index, method_name, address, size);
@@ -319,7 +340,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     } else {
                         SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
-                    
+
                     // Third party device patch
                     method_name = symbolList[i][3];
                     method_address = patcher.solveSymbol(index, method_name, address, size);
@@ -335,7 +356,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     } else {
                         SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
-                    
+
                     // White list restriction patch
                     method_name = symbolList[i][4];
                     method_address = patcher.solveSymbol(index, method_name, address, size);
@@ -351,7 +372,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                     } else {
                         SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                     }
-                    
+
                     // Disable WOWL (WoWLAN)
                     if (!ADDPR(brcmfx_config).enable_wowl)
                     {
@@ -370,32 +391,50 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
                             SYSLOG("BRCMFX", "failed to resolve %s", method_name);
                         }
                     }
-                    
+					
+					// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
+					method_name = symbolList[i][6];
+					if (method_name != nullptr) {
+						method_address = patcher.solveSymbol(index, method_name, address, size);
+						if (method_address) {
+							DBGLOG("BRCMFX", "obtained %s", method_name);
+							patcher.clearError();
+							patcher.routeFunction(method_address, reinterpret_cast<mach_vm_address_t>(osl_panic), true);
+							if (patcher.getError() == KernelPatcher::Error::NoError) {
+								DBGLOG("BRCMFX", "routed %s", method_name);
+							} else {
+								SYSLOG("BRCMFX", "failed to route %s", method_name);
+							}
+						} else {
+							SYSLOG("BRCMFX", "failed to resolve %s", method_name);
+						}
+					}
+
                     wl_msg_level = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level", address, size));
                     wl_msg_level2 = reinterpret_cast<int32_t *>(patcher.solveSymbol(index, "_wl_msg_level2", address, size));
                 }
-                
+
                 ADDPR(brcmfx_config).disabled = true;
-                
-                IOService *service  = findService(gIOServicePlane,"FakeBrcm");
+
+                IOService *service = findService(gIOServicePlane, "FakeBrcm");
                 if (service && service->getProvider() != nullptr)
                 {
                     auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
                     auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
                     bundle  = bundle  ? bundle->withString(bundle)   : nullptr;
                     ioclass = ioclass ? ioclass->withString(ioclass) : nullptr;
-                    
+
                     IOService *provider = service->getProvider();
                     service->stop(provider);
                     bool success = service->terminate();
                     DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-                    
+
                     if (provider->isOpen(service))
                     {
                         provider->close(service);
                         DBGLOG("BRCMFX", "FakeBrcm was closed");
                     }
-                    
+
                     if (success && bundle && ioclass)
                     {
                         OSDictionary * dict = OSDictionary::withCapacity(2);
@@ -423,7 +462,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
             }
         }
     }
-    
+
     // Ignore all the errors for other processors
     patcher.clearError();
 }

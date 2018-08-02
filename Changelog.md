@@ -53,3 +53,8 @@ AirportBrcmFixup Changelog
 - Allow to load all matched drivers for broadcom wi-fi (in case if there is a concurrency), except AirPortBrcmNIC-MFG.kext
 - AirPortBrcmNIC-MFG probe & start are hooked to prevent using of this driver
 - Fix a name conflict for config variable
+
+#### v1.1.4
+- Add patch to disable LPO panic in AirPortBrcmNIC: on some cards (DW1820A/BCM4350), the external LPO clock is sometimes
+not set upon initialization. While harmless in AirPortBrcm4360, AirPortBrcmNIC panics if this occurs. As it wasn't present previously,
+_osl_panic for string "32KHz LPO Clock not running" does not produce panic in AirPortBrcmNIC. Idea by al3xtjames.
