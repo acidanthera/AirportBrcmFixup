@@ -17,6 +17,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - Implements patch for removing of white-list check
 - Implements 5Ghz and country code patch (US by default)
 - Implements WOWL (WoWLAN) disabler (turned on by default) - no low speed after wake
+- Implements patch to disable LPO panic in AirPortBrcmNIC
 
 #### Installation types
 - Clover Airport Fix + AirportBrcmFixup
