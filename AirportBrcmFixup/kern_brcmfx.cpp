@@ -275,8 +275,6 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				{
 					auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
 					auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
-					bundle  = bundle  ? bundle->withString(bundle)   : nullptr;
-					ioclass = ioclass ? ioclass->withString(ioclass) : nullptr;
 
 					IOService *provider = service->getProvider();
 
@@ -297,8 +295,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					if (success && bundle && ioclass)
 					{
 						OSDictionary * dict = OSDictionary::withCapacity(2);
-						dict->setObject(kCFBundleIdentifierKey, bundle);
-						dict->setObject(KIOClass, ioclass);
+						dict->setObject(kCFBundleIdentifierKey, OSString::withString(bundle));
+						dict->setObject(KIOClass, OSString::withString(ioclass));
 						if (!gIOCatalogue->removeDrivers(dict, true))
 							SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
 						else
