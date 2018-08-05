@@ -22,6 +22,27 @@
 	<string>$(MODULE_VERSION)</string>
 	<key>IOKitPersonalities</key>
 	<dict>
+		<key>Airport_BrcmNIC</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.apple.driver.AirPort.BrcmNIC</string>
+			<key>IOClass</key>
+			<string>AirPort_BrcmNIC</string>
+			<key>IOMatchCategory</key>
+			<string>IODefaultMatchCategory</string>
+			<key>IONameMatch</key>
+			<array>
+				<string>pci14e4,43ba</string>
+				<string>pci14e4,43a3</string>
+				<string>pci14e4,43a0</string>
+			</array>
+			<key>IOProbeScore</key>
+			<integer>1241</integer>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+			<key>TruePowerOff</key>
+			<true/>
+		</dict>
 		<key>Airport_Brcm4360</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
@@ -32,6 +53,7 @@
 			<string>IODefaultMatchCategory</string>
 			<key>IONameMatch</key>
 			<array>
+				<string>pci14e4,4331</string>
 				<string>pci14e4,4353</string>
 				<string>pci14e4,4357</string>
 				<string>pci14e4,43b1</string>
@@ -78,7 +100,7 @@
 				<string>pci14e4,432d</string>
 			</array>
 			<key>IOProbeScore</key>
-			<integer>100</integer>
+			<integer>3000</integer>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>TruePowerOff</key>
@@ -105,7 +127,7 @@
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>as.vit9696.Lilu</key>
-		<string>1.2.0</string>
+		<string>1.2.6</string>
 		<key>com.apple.iokit.IONetworkingFamily</key>
 		<string>1.5</string>
 		<key>com.apple.iokit.IOPCIFamily</key>

@@ -14,10 +14,112 @@
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
 
-IOService *FakeBrcm::service_provider {nullptr};
+IOService 				  *PCIHookManager::service_provider{nullptr};
+WIOKit::t_PCIConfigRead16  PCIHookManager::orgConfigRead16 {nullptr};
+WIOKit::t_PCIConfigRead32  PCIHookManager::orgConfigRead32 {nullptr};
+
 bool FakeBrcm::service_found {false};
-WIOKit::t_PCIConfigRead16  FakeBrcm::orgConfigRead16 {nullptr};
-WIOKit::t_PCIConfigRead32  FakeBrcm::orgConfigRead32 {nullptr};
+
+//==============================================================================
+
+bool PCIHookManager::isServiceSupported(IORegistryEntry* service)
+{
+	if (service == service_provider)
+		return true;
+	
+	for (int i=0; i<kextListSize; i++)
+	{
+		if (strcmp(serviceNameList[i], service->getName()) == 0)
+			return true;
+	}
+	return false;
+}
+
+//==============================================================================
+
+UInt16 PCIHookManager::configRead16(IORegistryEntry *service, UInt32 space, UInt8 offset)
+{
+	UInt16 result = orgConfigRead16(service, space, offset);
+	UInt16 newResult = result;
+	
+	if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
+		switch (offset)
+	{
+		case WIOKit::PCIRegister::kIOPCIConfigVendorID:
+		{
+			UInt32 vendor;
+			if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
+				newResult = vendor;
+			break;
+		}
+		case WIOKit::PCIRegister::kIOPCIConfigDeviceID:
+		{
+			UInt32 device;
+			if (WIOKit::getOSDataValue(service, "device-id", device))
+				newResult = device;
+			break;
+		}
+	}
+	
+	if (newResult != result)
+		DBGLOG("BRCMFX", "PCIHookManager::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", service->getName(), result, newResult);
+	
+	return newResult;
+}
+
+//==============================================================================
+
+UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt8 offset)
+{
+	UInt32 result = orgConfigRead32(service, space, offset);
+	UInt32 newResult = result;
+	
+	// OS X does a non-aligned read, which still returns full vendor / device ID
+	if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
+	{
+		UInt32 vendor, device;
+		if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
+			newResult = (newResult & 0xFFFF0000) | vendor;
+		if (WIOKit::getOSDataValue(service, "device-id", device))
+			newResult = (device << 16) | (newResult & 0xFFFF);
+	}
+	
+	if (newResult != result)
+		DBGLOG("BRCMFX", "PCIHookManager::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", service->getName(), result, newResult);
+	
+	return newResult;
+}
+
+//==============================================================================
+
+void PCIHookManager::setServiceProvider(IOService *provider)
+{
+	service_provider = provider;
+}
+
+//==============================================================================
+
+void PCIHookManager::hookProvider(IOService *provider)
+{
+	UInt32 vendor, device;
+	if (WIOKit::getOSDataValue(provider, "device-id", device) && WIOKit::getOSDataValue(provider, "vendor-id", vendor))
+	{
+		if (WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigDeviceID) == device &&
+			WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigVendorID) == vendor)
+		{
+			DBGLOG("BRCMFX", "PCIHookManager::hookProvider: hook is not required since vendor-id && device-id are the same");
+			return;
+		}
+	}
+	
+	if (orgConfigRead16 == nullptr)
+		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
+			DBGLOG("BRCMFX", "PCIHookManager::hookProvider for configRead16 was successful");
+	
+	if (orgConfigRead32 == nullptr)
+		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
+			DBGLOG("BRCMFX", "PCIHookManager::hookProvider for configRead32 was successful");
+}
 
 //==============================================================================
 
@@ -45,8 +147,8 @@ bool FakeBrcm::init(OSDictionary *propTable)
 
 bool FakeBrcm::attach(IOService *provider)
 {
-	service_provider = provider;
-	hookProvider(provider);
+	PCIHookManager::setServiceProvider(provider);
+	PCIHookManager::hookProvider(provider);
 	
 	return super::attach(provider);
 }
@@ -140,8 +242,8 @@ bool FakeBrcm::start(IOService *provider)
 		return false;
 	}
 	
-	service_provider = provider;
-	hookProvider(provider);
+	PCIHookManager::setServiceProvider(provider);
+	PCIHookManager::hookProvider(provider);
 
 	return true;
 }
@@ -163,96 +265,4 @@ void FakeBrcm::free()
 }
 
 
-//==============================================================================
 
-bool FakeBrcm::isServiceSupported(IORegistryEntry* service)
-{
-	if (service == service_provider)
-		return true;
-	
-	for (int i=0; i<kextListSize; i++)
-	{
-		if (strcmp(serviceNameList[i], service->getName()) == 0)
-			return true;
-	}
-	return false;
-}
-
-//==============================================================================
-
-UInt16 FakeBrcm::configRead16(IORegistryEntry *service, UInt32 space, UInt8 offset)
-{
-	UInt16 result = orgConfigRead16(service, space, offset);
-	UInt16 newResult = result;
-	
-	if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
-	switch (offset)
-	{
-		case WIOKit::PCIRegister::kIOPCIConfigVendorID:
-		{
-			UInt32 vendor;
-			if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
-				newResult = vendor;
-			break;
-		}
-		case WIOKit::PCIRegister::kIOPCIConfigDeviceID:
-		{
-			UInt32 device;
-			if (WIOKit::getOSDataValue(service, "device-id", device))
-				newResult = device;
-			break;
-		}
-	}
-	
-	if (newResult != result)
-		DBGLOG("BRCMFX", "FakeBrcm::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", service->getName(), result, newResult);
-
-	return newResult;
-}
-
-//==============================================================================
-
-UInt32 FakeBrcm::configRead32(IORegistryEntry *service, UInt32 space, UInt8 offset)
-{
-	UInt32 result = orgConfigRead32(service, space, offset);
-	UInt32 newResult = result;
-	
-	// OS X does a non-aligned read, which still returns full vendor / device ID
-	if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
-	{
-		UInt32 vendor, device;
-		if (WIOKit::getOSDataValue(service, "vendor-id", vendor))
-			newResult = (newResult & 0xFFFF0000) | vendor;
-		if (WIOKit::getOSDataValue(service, "device-id", device))
-			newResult = (device << 16) | (newResult & 0xFFFF);
-	}
-	
-	if (newResult != result)
-		DBGLOG("BRCMFX", "FakeBrcm::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", service->getName(), result, newResult);
-	
-	return newResult;
-}
-
-//==============================================================================
-
-void FakeBrcm::hookProvider(IOService *provider)
-{
-	UInt32 vendor, device;
-	if (WIOKit::getOSDataValue(provider, "device-id", device) && WIOKit::getOSDataValue(provider, "vendor-id", vendor))
-	{
-		if (WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigDeviceID) == device &&
-			WIOKit::readPCIConfigValue(provider, WIOKit::PCIRegister::kIOPCIConfigVendorID) == vendor)
-		{
-			DBGLOG("BRCMFX", "FakeBrcm::hookProvider: hook is not required since vendor-id && device-id are the same");
-			return;
-		}
-	}
-	
-	if (orgConfigRead16 == nullptr)
-		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
-			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead16 was successful");
-	
-	if (orgConfigRead32 == nullptr)
-		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
-			DBGLOG("BRCMFX", "FakeBrcm::hookProvider for configRead32 was successful");
-}

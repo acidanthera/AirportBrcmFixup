@@ -9,7 +9,7 @@
 
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
-#include "kern_misc.hpp"
+#include "kern_fakebrcm.hpp"
 
 #include <IOKit/IOCatalogue.h>
 
@@ -52,7 +52,7 @@ void BRCMFX::deinit()
 
 bool BRCMFX::checkBoardId(const char *boardID)
 {
-	DBGLOG("BRCMFX", "checkBoardId is called");
+	//DBGLOG("BRCMFX", "checkBoardId is called");
 	return true;
 }
 
@@ -119,6 +119,13 @@ bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
+	
+	int index = find_service_index(service->getName());
+	if (index <= 0)
+	{
+		DBGLOG("BRCMFX", "start: disable service %s", service->getName());
+		return nullptr;
+	}
 
 	if (callbackBRCMFX->wl_msg_level && ADDPR(brcmfx_config).wl_msg_level != 0)
 		*callbackBRCMFX->wl_msg_level = ADDPR(brcmfx_config).wl_msg_level;
@@ -132,24 +139,33 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
 		DBGLOG("BRCMFX", "brcmfx-country in ioreg is set to %s", callbackBRCMFX->provider_country_code);
 	}
+	
+	PCIHookManager::setServiceProvider(provider);
+	PCIHookManager::hookProvider(provider);
 
-	return FunctionCast(start, callbackBRCMFX->orgStart)(service, provider);
+	bool result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
+	DBGLOG("BRCMFX", "start is finished with result %d", result);
+	return result;
 }
 
 //==============================================================================
 
-bool BRCMFX::start_mfg(IOService *service, IOService* provider)
+IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score)
 {
-	DBGLOG("BRCMFX", "start_mfg is called, service name is %s, provider name is %s", service->getName(), provider->getName());
-	return false;
-}
+	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
+	int index = find_service_index(service->getName());
+	if (index <= 0)
+	{
+		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
+		return nullptr;
+	}
+	
+	PCIHookManager::setServiceProvider(provider);
+	PCIHookManager::hookProvider(provider);
 
-//==============================================================================
-
-IOService* BRCMFX::probe_mfg(IOService *service, IOService * provider, SInt32 *score)
-{
-	DBGLOG("BRCMFX", "probe_mfg is called");
-	return nullptr;
+	IOService *result = FunctionCast(probe, callbackBRCMFX->orgProbe[index])(service, provider, score);
+	DBGLOG("BRCMFX", "probe is finished with result %s", (result != nullptr) ? "success" : "failed");
+	return result;
 }
 
 //==============================================================================
@@ -231,42 +247,38 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					SYSLOG("BRCMFX", "%s driver is already loaded, too late to do patching", serviceNameList[i]);
 					break;
 				}
+				
+				KernelPatcher::RouteRequest requests[] {
+					// Failed PCIe configuration (device-id checking)
+					{symbolList[i][0], start, orgStart[i]},
+					// Hook probe method
+					{symbolList[i][1], probe, orgProbe[i]},
+					// Chip identificator checking patch
+					{symbolList[i][2], siPmuFvcoPllreg, orgSiPmuFvcoPllreg},
+					// Wi-Fi 5 Ghz/Country code patch (required for 10.11)
+					{symbolList[i][3], wlc_set_countrycode_rev, orgWlcSetCountryCodeRev},
+					// Third party device patch
+					{symbolList[i][4], newVendorString},
+					// White list restriction patch
+					{symbolList[i][5], checkBoardId},
+					// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
+					{symbolList[i][7], osl_panic}
+				};
 
-				if (i != 0) {
-					KernelPatcher::RouteRequest requests[] {
-						// Failed PCIe configuration (device-id checking)
-						{symbolList[i][0], start, orgStart},
-						// Chip identificator checking patch
-						{symbolList[i][1], siPmuFvcoPllreg, orgSiPmuFvcoPllreg},
-						// Wi-Fi 5 Ghz/Country code patch (required for 10.11)
-						{symbolList[i][2], wlc_set_countrycode_rev, orgWlcSetCountryCodeRev},
-						// Third party device patch
-						{symbolList[i][3], newVendorString},
-						// White list restriction patch
-						{symbolList[i][4], checkBoardId},
-						// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
-						{symbolList[i][6], osl_panic},
-					};
+				patcher.routeMultiple(index, requests, address, size);
+				
+				if (i == 0)
+					break;
 
-					patcher.routeMultiple(index, requests, address, size);
-
-					// Disable WOWL (WoWLAN)
-					if (!ADDPR(brcmfx_config).enable_wowl)
-					{
-						KernelPatcher::RouteRequest request {symbolList[i][5], wlc_wowl_enable};
-						patcher.routeMultiple(index, &request, 1, address, size);
-					}
-
-					wl_msg_level = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level", address, size);
-					wl_msg_level2 = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level2", address, size);
-				} else {
-					KernelPatcher::RouteRequest requests[] {
-						// Failed PCIe configuration (device-id checking)
-						{symbolList[i][0], start, orgStart},
-						{"__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", probe_mfg}
-					};
-					patcher.routeMultiple(index, requests, address, size);
+				// Disable WOWL (WoWLAN)
+				if (!ADDPR(brcmfx_config).enable_wowl)
+				{
+					KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
+					patcher.routeMultiple(index, &request, 1, address, size);
 				}
+
+				wl_msg_level = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level", address, size);
+				wl_msg_level2 = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level2", address, size);
 
 				ADDPR(brcmfx_config).disabled = true;
 

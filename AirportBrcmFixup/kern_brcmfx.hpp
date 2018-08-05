@@ -11,6 +11,8 @@
 #include <Headers/kern_patcher.hpp>
 #include <Library/LegacyIOService.h>
 
+#include "kern_misc.hpp"
+
 class BRCMFX {
 public:
 	bool init();
@@ -28,23 +30,12 @@ private:
 	 */
 	void processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size);
 
-	/**
-	 *  start func type
-	 */
-	using t_start = bool (*)(IOService *, IOService *);
-
-	/**
-	 *  wlc_set_countrycode_rev func type
-	 */
-	using t_wlc_set_countrycode_rev = int64_t (*) (int64_t a1, const char *country_code, int a3);
-
 
 	/**
 	 *  Hooked methods / callbacks
 	 */
 	static bool             start(IOService *service, IOService* provider);
-	static bool             start_mfg(IOService *service, IOService* provider);
-	static IOService*       probe_mfg(IOService *service, IOService * provider, SInt32 *score);
+	static IOService*       probe(IOService *service, IOService * provider, SInt32 *score);
 	static void             osl_panic(const char *format, ...);
 	static const OSSymbol*  newVendorString(void);
 	static int32_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
@@ -56,7 +47,8 @@ private:
 	/**
 	 *  Trampolines for original method invocations
 	 */
-	mach_vm_address_t orgStart {};
+	mach_vm_address_t orgStart[kextListSize] {};
+	mach_vm_address_t orgProbe[kextListSize] {};
 	mach_vm_address_t orgWlcSetCountryCodeRev {};
 	mach_vm_address_t orgSiPmuFvcoPllreg {};
 	int32_t *wl_msg_level {nullptr};
