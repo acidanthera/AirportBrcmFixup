@@ -28,13 +28,13 @@ const char *Configuration::bootargBeta[] {
 Configuration ADDPR(brcmfx_config);
 
 void Configuration::readArguments() {
-	country_code_overrided = PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code));
+	country_code_overrided = PE_parse_boot_argn(ADDPR(brcmfx_config).bootargBrcmCountry, country_code, sizeof(country_code));
 
-	PE_parse_boot_argn(bootargWlanMsgLevel, &wl_msg_level, sizeof(wl_msg_level));
-	PE_parse_boot_argn(bootargWlanMsgLevel2, &wl_msg_level2, sizeof(wl_msg_level2));
+	PE_parse_boot_argn(ADDPR(brcmfx_config).bootargWlanMsgLevel, &wl_msg_level, sizeof(wl_msg_level));
+	PE_parse_boot_argn(ADDPR(brcmfx_config).bootargWlanMsgLevel2, &wl_msg_level2, sizeof(wl_msg_level2));
 
 	disabled = checkKernelArgument(ADDPR(brcmfx_config).bootargOff[0]);
-	enable_wowl = checkKernelArgument(bootargBrcmEnableWowl);
+	enable_wowl = checkKernelArgument(ADDPR(brcmfx_config).bootargBrcmEnableWowl);
 }
 
 PluginConfiguration ADDPR(config) {

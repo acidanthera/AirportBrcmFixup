@@ -61,3 +61,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v1.1.5
 - Mojave compatible
+
+#### v1.1.6
+- Try to resolve linker issue with __ZN13Configuration18bootargBrcmCountryE (with older Xcode versions)
