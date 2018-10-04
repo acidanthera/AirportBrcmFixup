@@ -133,7 +133,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	if (callbackBRCMFX->wl_msg_level2 && ADDPR(brcmfx_config).wl_msg_level2 != 0)
 		*callbackBRCMFX->wl_msg_level2 = ADDPR(brcmfx_config).wl_msg_level2;
 
-	auto data = OSDynamicCast(OSData, provider->getProperty(ADDPR(brcmfx_config).bootargBrcmCountry));
+	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
 	if (data)
 	{
 		lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
