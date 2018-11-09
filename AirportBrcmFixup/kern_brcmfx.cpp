@@ -66,20 +66,10 @@ const OSSymbol* BRCMFX::newVendorString(void)
 
 //==============================================================================
 
-int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
+bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 {
-	//_si_pmu_fvco_pllreg (10.11 - 10.13) compares value stored at [rdi+0x3c] with 0xaa52. This value is a chip identificator: 43602, details:
-	// https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.18/drivers/net/wireless/bcmdhd/include/bcmdevs.h#396
-	// In 10.12 and earlier _si_pmu_fvco_pllreg will fail if the value stored at [rdi+0x3c] is not 0xaa52, driver won't be loaded
-
-	uint32_t original = a1[15];
-	a1[15] = 0xaa52;
-
-	auto ret = FunctionCast(siPmuFvcoPllreg, callbackBRCMFX->orgSiPmuFvcoPllreg)(a1, a2, a3);
-
-	a1[15] = original;
-
-	return ret;
+	DBGLOG("BRCMFX", "wlc_wowl_enable is called, change returned value to false");
+	return false;
 }
 
 //==============================================================================
@@ -87,32 +77,54 @@ int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 // 55 53 -> US
 // 43 4e -> CN
 
-int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3)
-{
-	DBGLOG("BRCMFX", "wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);
-
-	const char *new_country_code = ADDPR(brcmfx_config).country_code;
-	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
-	{
-		new_country_code = callbackBRCMFX->provider_country_code;
-		DBGLOG("BRCMFX", "country code is overrided in ioreg");
-	}
-
-	a3 = -1;
-	int64_t result = FunctionCast(wlc_set_countrycode_rev, callbackBRCMFX->orgWlcSetCountryCodeRev)(a1, new_country_code, a3);
-	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
-	IOSleep(100);
-
-	return result;
+#define DEFINE_wlc_set_countrycode_rev(index)																				\
+int64_t BRCMFX::wlc_set_countrycode_rev##index(int64_t a1, const char *country_code, int a3)									\
+{																																\
+	DBGLOG("BRCMFX", "wlc_set_countrycode_rev is called, a3 = %d, country_code = %s", a3, country_code);						\
+																																\
+	const char *new_country_code = ADDPR(brcmfx_config).country_code;															\
+	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))							\
+	{																															\
+		new_country_code = callbackBRCMFX->provider_country_code;																\
+		DBGLOG("BRCMFX", "country code is overrided in ioreg");																	\
+	}																															\
+																																\
+	a3 = -1;																																	\
+	int64_t result = FunctionCast(wlc_set_countrycode_rev##index, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, a3);	\
+	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);							\
+	IOSleep(100);																																\
+																																				\
+	return result;																																\
 }
 
-//==============================================================================
+DEFINE_wlc_set_countrycode_rev(0);
+DEFINE_wlc_set_countrycode_rev(1);
+DEFINE_wlc_set_countrycode_rev(2);
 
-bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
-{
-	DBGLOG("BRCMFX", "wlc_wowl_enable is called, change returned value to false");
-	return false;
+
+
+//_si_pmu_fvco_pllreg (10.11 - 10.13) compares value stored at [rdi+0x3c] with 0xaa52. This value is a chip identificator: 43602, details:
+// https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.18/drivers/net/wireless/bcmdhd/include/bcmdevs.h#396
+// In 10.12 and earlier _si_pmu_fvco_pllreg will fail if the value stored at [rdi+0x3c] is not 0xaa52, driver won't be loaded
+
+#define DEFINE_siPmuFvcoPllreg(index) 																	\
+int32_t BRCMFX::siPmuFvcoPllreg##index(uint32_t *a1, int64_t a2, int64_t a3) 								\
+{																			 								\
+	uint32_t original = a1[15];																				\
+	a1[15] = 0xaa52;																						\
+																											\
+	DBGLOG("BRCMFX", "siPmuFvcoPllreg, original chip identificator = %04x", original);						\
+	auto ret = FunctionCast(siPmuFvcoPllreg##index, callbackBRCMFX->orgSiPmuFvcoPllreg[index])(a1, a2, a3);	\
+																											\
+	a1[15] = original;																						\
+																											\
+	return ret;																								\
 }
+
+DEFINE_siPmuFvcoPllreg(0);
+DEFINE_siPmuFvcoPllreg(1);
+DEFINE_siPmuFvcoPllreg(2);
+
 
 //==============================================================================
 
@@ -121,17 +133,13 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	
 	int index = find_service_index(service->getName());
-	if (index <= 0)
+	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == 0) ||
+						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
+	if (index < 0 || disable_driver)
 	{
 		DBGLOG("BRCMFX", "start: disable service %s", service->getName());
 		return nullptr;
 	}
-
-	if (callbackBRCMFX->wl_msg_level && ADDPR(brcmfx_config).wl_msg_level != 0)
-		*callbackBRCMFX->wl_msg_level = ADDPR(brcmfx_config).wl_msg_level;
-
-	if (callbackBRCMFX->wl_msg_level2 && ADDPR(brcmfx_config).wl_msg_level2 != 0)
-		*callbackBRCMFX->wl_msg_level2 = ADDPR(brcmfx_config).wl_msg_level2;
 
 	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
 	if (data)
@@ -154,7 +162,9 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 {
 	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	int index = find_service_index(service->getName());
-	if (index <= 0)
+	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == 0) ||
+						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
+	if (index < 0 || disable_driver)
 	{
 		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
 		return nullptr;
@@ -230,6 +240,18 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
 
 void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size)
 {
+	static const mach_vm_address_t wlc_set_countrycode_rev[kextListSize] {
+		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev0),
+		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev1),
+		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev2)
+	};
+	
+	static const mach_vm_address_t siPmuFvcoPllreg[kextListSize] {
+		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg0),
+		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg1),
+		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg2)
+	};
+	
 	for (size_t i = 0; i < kextListSize; i++)
 	{
 		if (kextList[i].loadIndex == index && !kext_handled[i])
@@ -254,9 +276,9 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					// Hook probe method
 					{symbolList[i][1], probe, orgProbe[i]},
 					// Chip identificator checking patch
-					{symbolList[i][2], siPmuFvcoPllreg, orgSiPmuFvcoPllreg},
+					{symbolList[i][2], siPmuFvcoPllreg[i], orgSiPmuFvcoPllreg[i]},
 					// Wi-Fi 5 Ghz/Country code patch (required for 10.11)
-					{symbolList[i][3], wlc_set_countrycode_rev, orgWlcSetCountryCodeRev},
+					{symbolList[i][3], wlc_set_countrycode_rev[i], orgWlcSetCountryCodeRev[i]},
 					// Third party device patch
 					{symbolList[i][4], newVendorString},
 					// White list restriction patch
@@ -267,7 +289,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 
 				patcher.routeMultiple(index, requests, address, size);
 				
-				if (i == 0)
+				if ((ADDPR(brcmfx_config).brcmfx_driver == -1 && i == 0) ||
+					(ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != i))
 					break;
 
 				// Disable WOWL (WoWLAN)
@@ -276,58 +299,54 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
 					patcher.routeMultiple(index, &request, 1, address, size);
 				}
-
-				wl_msg_level = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level", address, size);
-				wl_msg_level2 = patcher.solveSymbol<int32_t *>(index, "_wl_msg_level2", address, size);
-
-				ADDPR(brcmfx_config).disabled = true;
-
-				IOService *service = findService(gIOServicePlane, "FakeBrcm");
-				if (service && service->getProvider() != nullptr)
-				{
-					auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
-					auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
-
-					IOService *provider = service->getProvider();
-
-					bool success = false;
-					if (service->requestTerminate(provider, 0) && service->terminate()) {
-						service->stop(provider);
-						success = true;
-					}
-
-					DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-
-					if (provider->isOpen(service))
-					{
-						provider->close(service);
-						DBGLOG("BRCMFX", "FakeBrcm was closed");
-					}
-
-					if (success && bundle && ioclass)
-					{
-						OSDictionary * dict = OSDictionary::withCapacity(2);
-						dict->setObject(kCFBundleIdentifierKey, OSString::withString(bundle));
-						dict->setObject(KIOClass, OSString::withString(ioclass));
-						if (!gIOCatalogue->removeDrivers(dict, true))
-							SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
-						else
-							DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
-						OSSafeReleaseNULL(dict);
-					}
+				break;
+			}
+			
+			ADDPR(brcmfx_config).disabled = true;
+			
+			IOService *service = findService(gIOServicePlane, "FakeBrcm");
+			if (service && service->getProvider() != nullptr)
+			{
+				auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
+				auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
+				
+				IOService *provider = service->getProvider();
+				
+				bool success = false;
+				if (service->requestTerminate(provider, 0) && service->terminate()) {
+					service->stop(provider);
+					success = true;
 				}
-				else
+				
+				DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
+				
+				if (provider->isOpen(service))
 				{
-					OSDictionary* dict = OSDictionary::withCapacity(1);
-					dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
-					if (!gIOCatalogue->startMatching(dict))
-						SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
+					provider->close(service);
+					DBGLOG("BRCMFX", "FakeBrcm was closed");
+				}
+				
+				if (success && bundle && ioclass)
+				{
+					OSDictionary * dict = OSDictionary::withCapacity(2);
+					dict->setObject(kCFBundleIdentifierKey, OSString::withString(bundle));
+					dict->setObject(KIOClass, OSString::withString(ioclass));
+					if (!gIOCatalogue->removeDrivers(dict, true))
+						SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
 					else
-						DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
+						DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
 					OSSafeReleaseNULL(dict);
 				}
-
-				break;
+			}
+			else
+			{
+				OSDictionary* dict = OSDictionary::withCapacity(1);
+				dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
+				if (!gIOCatalogue->startMatching(dict))
+					SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
+				else
+					DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
+				OSSafeReleaseNULL(dict);
 			}
 		}
 	}

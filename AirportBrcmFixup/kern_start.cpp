@@ -30,8 +30,7 @@ Configuration ADDPR(brcmfx_config);
 void Configuration::readArguments() {
 	country_code_overrided = PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code));
 
-	PE_parse_boot_argn(bootargWlanMsgLevel, &wl_msg_level, sizeof(wl_msg_level));
-	PE_parse_boot_argn(bootargWlanMsgLevel2, &wl_msg_level2, sizeof(wl_msg_level2));
+	PE_parse_boot_argn(bootargBrcmDriver, &brcmfx_driver, sizeof(brcmfx_driver));
 
 	disabled = checkKernelArgument(bootargOff[0]);
 	enable_wowl = checkKernelArgument(bootargBrcmEnableWowl);

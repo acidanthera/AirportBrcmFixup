@@ -13,6 +13,7 @@
 
 #include "kern_misc.hpp"
 
+
 class BRCMFX {
 public:
 	bool init();
@@ -38,10 +39,16 @@ private:
 	static IOService*       probe(IOService *service, IOService * provider, SInt32 *score);
 	static void             osl_panic(const char *format, ...);
 	static const OSSymbol*  newVendorString(void);
-	static int32_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
 	static bool             checkBoardId(const char *boardID);
-	static int64_t          wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3);
 	static bool             wlc_wowl_enable(int64_t **a1);
+	
+	static int64_t          wlc_set_countrycode_rev0(int64_t a1, const char *country_code, int a3);
+	static int64_t          wlc_set_countrycode_rev1(int64_t a1, const char *country_code, int a3);
+	static int64_t          wlc_set_countrycode_rev2(int64_t a1, const char *country_code, int a3);
+	
+	static int32_t 			siPmuFvcoPllreg0(uint32_t *a1, int64_t a2, int64_t a3);
+	static int32_t 			siPmuFvcoPllreg1(uint32_t *a1, int64_t a2, int64_t a3);
+	static int32_t 			siPmuFvcoPllreg2(uint32_t *a1, int64_t a2, int64_t a3);
 
 
 	/**
@@ -49,10 +56,8 @@ private:
 	 */
 	mach_vm_address_t orgStart[kextListSize] {};
 	mach_vm_address_t orgProbe[kextListSize] {};
-	mach_vm_address_t orgWlcSetCountryCodeRev {};
-	mach_vm_address_t orgSiPmuFvcoPllreg {};
-	int32_t *wl_msg_level {nullptr};
-	int32_t *wl_msg_level2 {nullptr};
+	mach_vm_address_t orgWlcSetCountryCodeRev[kextListSize] {};
+	mach_vm_address_t orgSiPmuFvcoPllreg[kextListSize] {};
 	char provider_country_code[5] {""};
 };
 

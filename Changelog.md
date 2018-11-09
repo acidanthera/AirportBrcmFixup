@@ -64,3 +64,8 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v1.1.6
 - Try to resolve linker issue with __ZN13Configuration18bootargBrcmCountryE (with older Xcode versions)
+
+#### v1.1.7
+- Use separate variables and methods wlc_set_countrycode_rev & siPmuFvcoPllreg for every driver
+- Introduce a new boot-arg brcmfx-driver=[0|1|2], 0 - AirPort.BrcmNIC-MFG, 1 - AirPort.Brcm4360, 2 - AirPort.BrcmNIC
+- Remove redundancy boot-args wl_msg_level and wl_msg_level2 (they are supported by Apple)

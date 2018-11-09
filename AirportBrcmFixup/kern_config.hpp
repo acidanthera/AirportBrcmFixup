@@ -20,9 +20,9 @@ public:
 	static const char *bootargDebug[];
 	static const char *bootargBeta[];
 	static constexpr const char *bootargBrcmCountry {"brcmfx-country"};     // 5 Ghz patch - change default country
-	static constexpr const char *bootargWlanMsgLevel {"wl_msg_level"};      // message level for wlan kexts
-	static constexpr const char *bootargWlanMsgLevel2 {"wl_msg_level2"};    // message level for wlan kexts
 	static constexpr const char *bootargBrcmEnableWowl {"-brcmfxwowl"};     // enable WOWL
+	static constexpr const char *bootargBrcmDriver {"brcmfx-driver"};
+	
 	
 	/**
 	 *  Retrieve boot arguments
@@ -37,8 +37,7 @@ public:
 	bool disabled           {false};
 	bool enable_wowl        {false};
 	
-	int32_t wl_msg_level    {0};
-	int32_t wl_msg_level2   {0};
+	int32_t brcmfx_driver   {-1};
 
 	Configuration() = default;
 };

@@ -29,14 +29,14 @@ static const char *binList[] {
 };
 
 static const char *symbolList[][8] {
-	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService", "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi",  nullptr, 	              nullptr,
-	 nullptr, 	 									nullptr, 									      nullptr,   		      nullptr },
+	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",   "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg", "_wlc_set_countrycode_rev",
+	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv", "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",   "_wlc_wowl_enable",     nullptr },
 	
-	{"__ZN16AirPort_Brcm43605startEP9IOService",    "__ZN16AirPort_Brcm43605probeEP9IOServicePi" ,   "_si_pmu_fvco_pllreg",   "_wlc_set_countrycode_rev",
-	 "__ZNK16AirPort_Brcm436015newVendorStringEv",  "__ZN16AirPort_Brcm436012checkBoardIdEPKc",      "_wlc_wowl_enable",      nullptr },
+	{"__ZN16AirPort_Brcm43605startEP9IOService",      "__ZN16AirPort_Brcm43605probeEP9IOServicePi" ,   "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
+	 "__ZNK16AirPort_Brcm436015newVendorStringEv",    "__ZN16AirPort_Brcm436012checkBoardIdEPKc",      "_wlc_wowl_enable",     nullptr },
 	
-	{"__ZN15AirPort_BrcmNIC5startEP9IOService",     "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
-	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",   "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,      "_wlc_wowl_enable",     "_osl_panic" }
+	{"__ZN15AirPort_BrcmNIC5startEP9IOService",       "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
+	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,      "_wlc_wowl_enable",     "_osl_panic" }
 };
 
 inline int find_service_index(const char* service_name)
