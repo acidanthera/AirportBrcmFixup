@@ -296,8 +296,20 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				// Disable WOWL (WoWLAN)
 				if (!ADDPR(brcmfx_config).enable_wowl)
 				{
-					KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
-					patcher.routeMultiple(index, &request, 1, address, size);
+					KernelPatcher::LookupPatch patch {
+						&kextList[i],
+						reinterpret_cast<const uint8_t *>("wowl_test\0wowl\0"),
+						reinterpret_cast<const uint8_t *>("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"),
+						15, 1
+					};
+					
+					patcher.applyLookupPatch(&patch);
+					if (patcher.getError() != KernelPatcher::Error::NoError) {
+						DBGLOG("BRCMFX", "failed to apply wowl patch based on strings, error = %d", patcher.getError());
+						patcher.clearError();
+						KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
+						patcher.routeMultiple(index, &request, 1, address, size);
+					}
 				}
 				break;
 			}
