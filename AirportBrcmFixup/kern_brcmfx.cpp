@@ -287,7 +287,10 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					{symbolList[i][7], osl_panic}
 				};
 
-				patcher.routeMultiple(index, requests, address, size);
+				if (!patcher.routeMultiple(index, requests, address, size))
+					SYSLOG("BRCMFX", "at least one basic patch is failed, error = %d", patcher.getError());
+				else
+					DBGLOG("BRCMFX", "all patches are successfuly applied to %s", idList[i]);
 				
 				if ((ADDPR(brcmfx_config).brcmfx_driver == -1 && i == 0) ||
 					(ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != i))
@@ -296,20 +299,12 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				// Disable WOWL (WoWLAN)
 				if (!ADDPR(brcmfx_config).enable_wowl)
 				{
-					KernelPatcher::LookupPatch patch {
-						&kextList[i],
-						reinterpret_cast<const uint8_t *>("wowl_test\0wowl\0"),
-						reinterpret_cast<const uint8_t *>("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"),
-						15, 1
-					};
-					
-					patcher.applyLookupPatch(&patch);
-					if (patcher.getError() != KernelPatcher::Error::NoError) {
-						DBGLOG("BRCMFX", "failed to apply wowl patch based on strings, error = %d", patcher.getError());
-						patcher.clearError();
-						KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
-						patcher.routeMultiple(index, &request, 1, address, size);
-					}
+					patcher.clearError();
+					KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
+					if (!patcher.routeMultiple(index, &request, 1, address, size))
+						SYSLOG("BRCMFX", "wowl disable patch is failed, error = %d", patcher.getError());
+					else
+						DBGLOG("BRCMFX", "wowl disable patch is successfuly applied to %s", idList[i]);
 				}
 				break;
 			}

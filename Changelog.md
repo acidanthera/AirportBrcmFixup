@@ -69,4 +69,4 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 - Use separate variables and methods wlc_set_countrycode_rev & siPmuFvcoPllreg for every driver
 - Introduce a new boot-arg brcmfx-driver=[0|1|2], 0 - AirPort.BrcmNIC-MFG, 1 - AirPort.Brcm4360, 2 - AirPort.BrcmNIC
 - Remove redundancy boot-args wl_msg_level and wl_msg_level2 (they are supported by Apple)
-- Improve wowl-disable patch (now it is based on replacing sring with fallback to the old implementation)
+- pci14e4,43b1 & pci14e4,43b2 matched also to AirPort_BrcmNIC
