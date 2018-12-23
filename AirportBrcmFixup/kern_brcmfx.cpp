@@ -78,36 +78,34 @@ bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
 // 55 53 -> US
 // 43 4e -> CN
 
-#define DEFINE_wlc_set_countrycode_rev(index)																				    \
-int64_t BRCMFX::wlc_set_countrycode_rev##index(int64_t a1, const char *country_code, int a3)									\
-{																																\
-	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%d is called, a3 = %d, country_code = %s", index, a3, country_code);			    \
-																																\
-	const char *new_country_code = ADDPR(brcmfx_config).country_code;															\
-	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))							\
-	{																															\
-		new_country_code = callbackBRCMFX->provider_country_code;																\
-		DBGLOG("BRCMFX", "country code is overrided in ioreg");																	\
-	}																															\
-																																\
-	a3 = -1;																																	\
-	int64_t result = FunctionCast(wlc_set_countrycode_rev##index, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, a3);	\
-	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);							\
-	IOSleep(100);																																\
-																																				\
-	return result;																																\
-}
+//==============================================================================
 
-DEFINE_wlc_set_countrycode_rev(0);
-DEFINE_wlc_set_countrycode_rev(1);
-DEFINE_wlc_set_countrycode_rev(2);
+template <size_t index>
+int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3)
+{
+	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%ld is called, a3 = %d, country_code = %s", index, a3, country_code);
+
+	const char *new_country_code = ADDPR(brcmfx_config).country_code;
+	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
+	{
+		new_country_code = callbackBRCMFX->provider_country_code;
+		DBGLOG("BRCMFX", "country code is overrided in ioreg");
+	}
+	
+	a3 = -1;
+	int64_t result = FunctionCast(wlc_set_countrycode_rev<index>, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, a3);
+	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
+	IOSleep(100);
+	
+	return result;
+}
 
 //==============================================================================
 
 int64_t BRCMFX::wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *country_code, int a4)
 {
-	int index = 3;
-	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%d is called, a4 = %d, country_code = %s", index, a4, country_code);
+	size_t index = 3;
+	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%ld is called, a4 = %d, country_code = %s", index, a4, country_code);
 	
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;
 	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
@@ -121,7 +119,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *cou
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
 	
-	return result;																																
+	return result;
 }
 
 
@@ -129,25 +127,19 @@ int64_t BRCMFX::wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *cou
 // https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.18/drivers/net/wireless/bcmdhd/include/bcmdevs.h#396
 // In 10.12 and earlier _si_pmu_fvco_pllreg will fail if the value stored at [rdi+0x3c] is not 0xaa52, driver won't be loaded
 
-#define DEFINE_siPmuFvcoPllreg(index) 																	    \
-int32_t BRCMFX::siPmuFvcoPllreg##index(uint32_t *a1, int64_t a2, int64_t a3) 								\
-{																			 								\
-	uint32_t original = a1[15];																				\
-	a1[15] = 0xaa52;																						\
-																											\
-	DBGLOG("BRCMFX", "siPmuFvcoPllreg%d, original chip identificator = %04x", index, original);				\
-	auto ret = FunctionCast(siPmuFvcoPllreg##index, callbackBRCMFX->orgSiPmuFvcoPllreg[index])(a1, a2, a3);	\
-																											\
-	a1[15] = original;																						\
-																											\
-	return ret;																								\
+template <size_t index>
+int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
+{
+	uint32_t original = a1[15];
+	a1[15] = 0xaa52;
+	
+	DBGLOG("BRCMFX", "siPmuFvcoPllreg%ld, original chip identificator = %04x", index, original);
+	auto ret = FunctionCast(siPmuFvcoPllreg<index>, callbackBRCMFX->orgSiPmuFvcoPllreg[index])(a1, a2, a3);
+	
+	a1[15] = original;
+	
+	return ret;
 }
-
-DEFINE_siPmuFvcoPllreg(0);
-DEFINE_siPmuFvcoPllreg(1);
-DEFINE_siPmuFvcoPllreg(2);
-DEFINE_siPmuFvcoPllreg(3);
-
 
 //==============================================================================
 
@@ -266,17 +258,17 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 	DBGLOG("BRCMFX", "processKext is called for index %ld", index);
 	
 	static const mach_vm_address_t wlc_set_countrycode_rev[kextListSize] {
-		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev0),
-		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev1),
-		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev2),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<2>),
 		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev3)
 	};
 	
 	static const mach_vm_address_t siPmuFvcoPllreg[kextListSize] {
-		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg0),
-		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg1),
-		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg2),
-		reinterpret_cast<mach_vm_address_t>(siPmuFvcoPllreg3)
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<2>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<3>)
 	};
 	
 	for (size_t i = 0; i < kextListSize; i++)
