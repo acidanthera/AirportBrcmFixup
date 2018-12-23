@@ -70,3 +70,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 - Introduce a new boot-arg brcmfx-driver=[0|1|2], 0 - AirPort.BrcmNIC-MFG, 1 - AirPort.Brcm4360, 2 - AirPort.BrcmNIC
 - Remove redundancy boot-args wl_msg_level and wl_msg_level2 (they are supported by Apple)
 - pci14e4,43b1 & pci14e4,43b2 matched also to AirPort_BrcmNIC
+
+#### v1.1.8
+- Support AirPort_Brcm4331

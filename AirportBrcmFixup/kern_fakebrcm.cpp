@@ -157,7 +157,7 @@ bool FakeBrcm::attach(IOService *provider)
 
 IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 {
-	DBGLOG("BRCMFX", "FakeBrcm::probe()");
+	DBGLOG("BRCMFX", "FakeBrcm::probe(), version %s", xStringify(MODULE_VERSION));
 
 	if (!ADDPR(startSuccess))
 	{

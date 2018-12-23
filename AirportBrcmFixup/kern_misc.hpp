@@ -8,24 +8,27 @@
 #ifndef kern_misc_hpp
 #define kern_misc_hpp
 
-static const size_t kextListSize {3};
+#include <Headers/kern_util.hpp>
 
 static const char *serviceNameList[] {
 	"AirPort_BrcmNIC_MFG",
 	"AirPort_Brcm4360",
-	"AirPort_BrcmNIC"
+	"AirPort_BrcmNIC",
+	"AirPort_Brcm4331"
 };
 
 static const char *idList[] {
 	"com.apple.driver.AirPort.BrcmNIC-MFG",
 	"com.apple.driver.AirPort.Brcm4360",
-	"com.apple.driver.AirPort.BrcmNIC"
+	"com.apple.driver.AirPort.BrcmNIC",
+	"com.apple.driver.AirPort.Brcm4331"
 };
 
 static const char *binList[] {
 	"/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4360.kext/Contents/MacOS/AirPortBrcm4360",
-	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcmNIC.kext/Contents/MacOS/AirPortBrcmNIC"
+	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcmNIC.kext/Contents/MacOS/AirPortBrcmNIC",
+	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4331.kext/Contents/MacOS/AirPortBrcm4331"
 };
 
 static const char *symbolList[][8] {
@@ -36,8 +39,13 @@ static const char *symbolList[][8] {
 	 "__ZNK16AirPort_Brcm436015newVendorStringEv",    "__ZN16AirPort_Brcm436012checkBoardIdEPKc",      "_wlc_wowl_enable",     nullptr },
 	
 	{"__ZN15AirPort_BrcmNIC5startEP9IOService",       "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
-	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,      "_wlc_wowl_enable",     "_osl_panic" }
+	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,      "_wlc_wowl_enable",     "_osl_panic" },
+	
+	{"__ZN16AirPort_Brcm43315startEP9IOService",      "__ZN16AirPort_Brcm43315probeEP9IOServicePi",    nullptr,                "_wlc_set_countrycode_rev",
+	 "__ZNK16AirPort_Brcm433115newVendorStringEv",    nullptr ,      								   "_wlc_wowl_enable",     nullptr }
 };
+
+static const size_t kextListSize {arrsize(serviceNameList)};
 
 inline int find_service_index(const char* service_name)
 {

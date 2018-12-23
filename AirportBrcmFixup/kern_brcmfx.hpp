@@ -45,10 +45,12 @@ private:
 	static int64_t          wlc_set_countrycode_rev0(int64_t a1, const char *country_code, int a3);
 	static int64_t          wlc_set_countrycode_rev1(int64_t a1, const char *country_code, int a3);
 	static int64_t          wlc_set_countrycode_rev2(int64_t a1, const char *country_code, int a3);
+	static int64_t          wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *country_code, int a4);
 	
 	static int32_t 			siPmuFvcoPllreg0(uint32_t *a1, int64_t a2, int64_t a3);
 	static int32_t 			siPmuFvcoPllreg1(uint32_t *a1, int64_t a2, int64_t a3);
 	static int32_t 			siPmuFvcoPllreg2(uint32_t *a1, int64_t a2, int64_t a3);
+	static int32_t 			siPmuFvcoPllreg3(uint32_t *a1, int64_t a2, int64_t a3);
 
 
 	/**
