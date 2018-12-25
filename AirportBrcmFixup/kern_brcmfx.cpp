@@ -102,10 +102,10 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 
 //==============================================================================
 
-int64_t BRCMFX::wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *country_code, int a4)
+int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char *country_code, int a4)
 {
-	size_t index = 3;
-	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%ld is called, a4 = %d, country_code = %s", index, a4, country_code);
+	int index = 3;
+	DBGLOG("BRCMFX", "wlc_set_countrycode_rev_4331 is called, a4 = %d, country_code = %s", a4, country_code);
 	
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;
 	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
@@ -115,7 +115,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *cou
 	}
 	
 	a4 = -1;
-	int64_t result = FunctionCast(wlc_set_countrycode_rev3, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, a4);
+	int64_t result = FunctionCast(wlc_set_countrycode_rev_4331, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, a4);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
 	
@@ -255,13 +255,11 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
 
 void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size)
 {
-	DBGLOG("BRCMFX", "processKext is called for index %ld", index);
-	
 	static const mach_vm_address_t wlc_set_countrycode_rev[kextListSize] {
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<0>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<1>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<2>),
-		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev3)
+		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev_4331)
 	};
 	
 	static const mach_vm_address_t siPmuFvcoPllreg[kextListSize] {

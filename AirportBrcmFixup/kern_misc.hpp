@@ -10,28 +10,30 @@
 
 #include <Headers/kern_util.hpp>
 
-static const char *serviceNameList[] {
+static const size_t kextListSize {4};
+
+static const char *serviceNameList[kextListSize] {
 	"AirPort_BrcmNIC_MFG",
 	"AirPort_Brcm4360",
 	"AirPort_BrcmNIC",
 	"AirPort_Brcm4331"
 };
 
-static const char *idList[] {
+static const char *idList[kextListSize] {
 	"com.apple.driver.AirPort.BrcmNIC-MFG",
 	"com.apple.driver.AirPort.Brcm4360",
 	"com.apple.driver.AirPort.BrcmNIC",
 	"com.apple.driver.AirPort.Brcm4331"
 };
 
-static const char *binList[] {
+static const char *binList[kextListSize] {
 	"/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4360.kext/Contents/MacOS/AirPortBrcm4360",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcmNIC.kext/Contents/MacOS/AirPortBrcmNIC",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4331.kext/Contents/MacOS/AirPortBrcm4331"
 };
 
-static const char *symbolList[][8] {
+static const char *symbolList[kextListSize][8] {
 	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",   "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg", "_wlc_set_countrycode_rev",
 	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv", "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",   "_wlc_wowl_enable",     nullptr },
 	
@@ -44,8 +46,6 @@ static const char *symbolList[][8] {
 	{"__ZN16AirPort_Brcm43315startEP9IOService",      "__ZN16AirPort_Brcm43315probeEP9IOServicePi",    nullptr,                "_wlc_set_countrycode_rev",
 	 "__ZNK16AirPort_Brcm433115newVendorStringEv",    nullptr ,      								   "_wlc_wowl_enable",     nullptr }
 };
-
-static const size_t kextListSize {arrsize(serviceNameList)};
 
 inline int find_service_index(const char* service_name)
 {

@@ -44,7 +44,7 @@ private:
 	
 	template <size_t index>
 	static int64_t          wlc_set_countrycode_rev(int64_t a1, const char *country_code, int a3);
-	static int64_t          wlc_set_countrycode_rev3(int64_t a1, int64_t a2, const char *country_code, int a4);
+	static int64_t          wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char *country_code, int a4);
 	
 	template <size_t index>
 	static int32_t 			siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
