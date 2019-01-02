@@ -87,7 +87,6 @@
 				<string>pci14e4,43b2</string>
 				<string>pci14e4,4357</string>
 				<string>pci14e4,432b</string>
-				<string>pci14e4,43ba</string>
 				<string>pci14e4,4311</string>
 				<string>pci14e4,4312</string>
 				<string>pci14e4,4313</string>
@@ -102,7 +101,7 @@
 				<string>pci14e4,432d</string>
 			</array>
 			<key>IOProbeScore</key>
-			<integer>3000</integer>
+			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>TruePowerOff</key>

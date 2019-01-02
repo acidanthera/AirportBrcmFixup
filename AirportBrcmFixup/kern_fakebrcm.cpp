@@ -170,8 +170,6 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 		SYSLOG("BRCMFX", "FakeBrcm super::probe returned nullptr\n");
 		return nullptr;
 	}
-	
-	*score = -2000;
 
 	if (ADDPR(brcmfx_config).disabled)
 	{
@@ -202,11 +200,13 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	
 	if (service_found)
 	{
-		DBGLOG("BRCMFX", "FakeBrcm::probe() will change score from %d to 2000", *score);
-		*score = 2000;  // change probe score to be the first in the list
+		SInt32 new_probe_score = 6000;
+		DBGLOG("BRCMFX", "FakeBrcm::probe() will change score from %d to %d", *score, new_probe_score);
+		*score = new_probe_score;  // change probe score to be the first in the list
 	}
 	else
 	{
+		*score = -2000;
 		DBGLOG("BRCMFX", "FakeBrcm::probe(): fallback to original driver");
 	}
 

@@ -73,3 +73,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v1.1.8
 - Support AirPort_Brcm4331
+
+#### v1.1.9
+- Fix issue with IOProbeScore for Airport_BrcmNIC
