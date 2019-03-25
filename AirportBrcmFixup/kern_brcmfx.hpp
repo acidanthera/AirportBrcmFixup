@@ -39,7 +39,9 @@ private:
 	static IOService*       probe(IOService *service, IOService * provider, SInt32 *score);
 	static void             osl_panic(const char *format, ...);
 	static const OSSymbol*  newVendorString(void);
-	static bool             checkBoardId(const char *boardID);
+	
+	template <size_t index>
+	static bool             checkBoardId(void *that, const char *boardID);
 	static bool             wlc_wowl_enable(int64_t **a1);
 	
 	template <size_t index>
@@ -58,6 +60,8 @@ private:
 	mach_vm_address_t orgWlcSetCountryCodeRev[kextListSize] {};
 	mach_vm_address_t orgSiPmuFvcoPllreg[kextListSize] {};
 	char provider_country_code[5] {""};
+	
+	const char** cpmChanSwitchWhitelist {};
 };
 
 #endif /* kern_brcmfx_hpp */

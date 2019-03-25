@@ -51,9 +51,22 @@ void BRCMFX::deinit()
 
 //==============================================================================
 
-bool BRCMFX::checkBoardId(const char *boardID)
+template <size_t index>
+bool BRCMFX::checkBoardId(void *that, const char *boardID)
 {
-	//DBGLOG("BRCMFX", "checkBoardId is called");
+	if (index == AirPort_Brcm4360 && callbackBRCMFX && callbackBRCMFX->cpmChanSwitchWhitelist)
+	{
+		const char **cpmChanSwitchWhitelist = callbackBRCMFX->cpmChanSwitchWhitelist;
+		while (*cpmChanSwitchWhitelist)
+		{
+			if (boardID == *cpmChanSwitchWhitelist)
+			{
+				DBGLOG("BRCMFX", "checkBoardId is called with boardID from cpmChanSwitchWhitelist: %s", boardID);
+				return false;
+			}
+			cpmChanSwitchWhitelist++;
+		}
+	}
 	return true;
 }
 
@@ -104,7 +117,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 
 int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char *country_code, int a4)
 {
-	int index = 3;
+	int index = AirPort_Brcm4331;
 	DBGLOG("BRCMFX", "wlc_set_countrycode_rev_4331 is called, a4 = %d, country_code = %s", a4, country_code);
 	
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;
@@ -148,7 +161,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	
 	int index = find_service_index(service->getName());
-	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == 0) ||
+	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) ||
 						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
@@ -177,7 +190,7 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 {
 	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	int index = find_service_index(service->getName());
-	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == 0) ||
+	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) ||
 						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
@@ -269,6 +282,13 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<3>)
 	};
 	
+	static const mach_vm_address_t checkBoardId[kextListSize] {
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<2>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<3>)
+	};
+	
 	for (size_t i = 0; i < kextListSize; i++)
 	{
 		if (kextList[i].loadIndex == index && !kext_handled[i])
@@ -299,7 +319,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					// Third party device patch
 					{symbolList[i][4], newVendorString},
 					// White list restriction patch
-					{symbolList[i][5], checkBoardId},
+					{symbolList[i][5], checkBoardId[i]},
 					// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
 					{symbolList[i][7], osl_panic}
 				};
@@ -309,9 +329,16 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				else
 					DBGLOG("BRCMFX", "all patches are successfuly applied to %s", idList[i]);
 				
-				if ((ADDPR(brcmfx_config).brcmfx_driver == -1 && i == 0) ||
+				if ((ADDPR(brcmfx_config).brcmfx_driver == -1 && i == AirPort_BrcmNIC_MFG) ||
 					(ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != i))
 					break;
+				
+				if (cpmChanSwitchWhitelist == nullptr && i == AirPort_Brcm4360)
+				{
+					cpmChanSwitchWhitelist = reinterpret_cast<const char**>(patcher.solveSymbol(index, "__cpmChanSwitchWhitelist"));
+					if (cpmChanSwitchWhitelist != nullptr)
+						DBGLOG("BRCMFX", "symbol __cpmChanSwitchWhitelist successfuly solved");
+				}
 
 				// Disable WOWL (WoWLAN)
 				if (!ADDPR(brcmfx_config).enable_wowl)

@@ -76,3 +76,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v1.1.9
 - Fix issue with IOProbeScore for Airport_BrcmNIC
+
+#### v2.0.0
+- checkBoardId patch has been improved: returns false for boardId in cpmChanSwitchWhitelist

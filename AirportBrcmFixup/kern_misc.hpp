@@ -12,6 +12,13 @@
 
 static const size_t kextListSize {4};
 
+enum AirportServices {
+	AirPort_BrcmNIC_MFG = 0,
+	AirPort_Brcm4360,
+	AirPort_BrcmNIC,
+	AirPort_Brcm4331
+};
+
 static const char *serviceNameList[kextListSize] {
 	"AirPort_BrcmNIC_MFG",
 	"AirPort_Brcm4360",
