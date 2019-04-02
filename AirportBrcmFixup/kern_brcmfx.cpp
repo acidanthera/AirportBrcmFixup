@@ -104,9 +104,8 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 		new_country_code = callbackBRCMFX->provider_country_code;
 		DBGLOG("BRCMFX", "country code is overrided in ioreg");
 	}
-	
-	a3 = -1;
-	int64_t result = FunctionCast(wlc_set_countrycode_rev<index>, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, a3);
+
+	int64_t result = FunctionCast(wlc_set_countrycode_rev<index>, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
 	
@@ -127,8 +126,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char 
 		DBGLOG("BRCMFX", "country code is overrided in ioreg");
 	}
 	
-	a4 = -1;
-	int64_t result = FunctionCast(wlc_set_countrycode_rev_4331, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, a4);
+	int64_t result = FunctionCast(wlc_set_countrycode_rev_4331, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
 	
