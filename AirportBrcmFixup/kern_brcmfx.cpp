@@ -174,6 +174,12 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		DBGLOG("BRCMFX", "brcmfx-country in ioreg is set to %s", callbackBRCMFX->provider_country_code);
 	}
 	
+	auto name = provider->getName();
+	
+	// There could be only one ARPT
+	if (!name || strcmp(name, "ARPT") != 0)
+		WIOKit::renameDevice(provider, "ARPT");
+	
 	PCIHookManager::setServiceProvider(provider);
 	PCIHookManager::hookProvider(provider);
 

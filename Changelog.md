@@ -79,3 +79,4 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.0
 - checkBoardId patch has been improved: returns false for boardId in cpmChanSwitchWhitelist
+- Service provider name is changed to ARPT automatically
