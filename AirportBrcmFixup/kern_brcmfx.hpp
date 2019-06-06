@@ -37,6 +37,12 @@ private:
 	 */
 	void processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size);
 
+	/**
+	 *  Symbol types
+	 */
+	using IOCatalogue_startMatching_symbol = bool (*)(void *that, OSSymbol const* bundle_identifier);
+	using IOCatalogue_startMatching_dictionary = bool (*)(void *that, OSDictionary *matching);
+	using IOCatalogue_removeDrivers = bool (*)(void *that, OSDictionary *matching, bool doNubMatching);
 
 	/**
 	 *  Hooked methods / callbacks
@@ -66,9 +72,9 @@ private:
 	mach_vm_address_t orgSiPmuFvcoPllreg[kextListSize] {};
 	
 	// access to IOCatalogue methods
-	mach_vm_address_t startMatching_symbol 		{};
-	mach_vm_address_t startMatching_dictionary  {};
-	mach_vm_address_t removeDrivers     	    {};
+	IOCatalogue_startMatching_symbol startMatching_symbol {};
+	IOCatalogue_startMatching_dictionary startMatching_dictionary {};
+	IOCatalogue_removeDrivers removeDrivers {};
 	
 	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};
