@@ -33,11 +33,17 @@ static bool kext_handled[kextListSize] {};
 
 bool BRCMFX::init()
 {
+	callbackBRCMFX = this;
+	
+	lilu.onPatcherLoadForce(
+		[](void *user, KernelPatcher &patcher) {
+			callbackBRCMFX->processKernel(patcher);
+		}, this);
+
 	lilu.onKextLoadForce(kextList, kextListSize,
-	[](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
-		callbackBRCMFX = static_cast<BRCMFX *>(user);
-		callbackBRCMFX->processKext(patcher, index, address, size);
-	}, this);
+		[](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
+			callbackBRCMFX->processKext(patcher, index, address, size);
+		}, this);
 
 
 	return true;
@@ -270,6 +276,36 @@ IOService* findService(const IORegistryPlane* plane, const char *service_name)
 
 //==============================================================================
 
+bool IOCatalogue_startMatching_symbol(void *that, OSSymbol const* bundle_identifier) 	{ return false; }
+bool IOCatalogue_startMatching_dictionary(void *that, OSDictionary *matching) 			{ return false; }
+bool IOCatalogue_removeDrivers(void *that, OSDictionary *matching, bool doNubMatching) 	{ return false; }
+
+//==============================================================================
+
+void BRCMFX::processKernel(KernelPatcher &patcher)
+{
+	if (!startMatching_symbol && !startMatching_dictionary)
+	{
+		startMatching_symbol = patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEPK8OSSymbol");
+		if (!startMatching_symbol)
+			startMatching_dictionary = patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEP12OSDictionary");
+		if (!startMatching_symbol && !startMatching_dictionary)
+			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::startMatching method, error = %d", patcher.getError());
+	}
+	
+	if (!removeDrivers)
+	{
+		removeDrivers = patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13removeDriversEP12OSDictionaryb");
+		if (!removeDrivers)
+			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::removeDrivers method, error = %d", patcher.getError());
+	}
+	
+	// Ignore all the errors for other processors
+	patcher.clearError();
+}
+
+//==============================================================================
+
 void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size)
 {
 	static const mach_vm_address_t wlc_set_countrycode_rev[kextListSize] {
@@ -381,26 +417,37 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					DBGLOG("BRCMFX", "FakeBrcm was closed");
 				}
 				
-				if (success && bundle && ioclass)
+				if (success && bundle && ioclass && removeDrivers)
 				{
 					OSDictionary * dict = OSDictionary::withCapacity(2);
 					dict->setObject(kCFBundleIdentifierKey, OSString::withString(bundle));
 					dict->setObject(KIOClass, OSString::withString(ioclass));
-					if (!gIOCatalogue->removeDrivers(dict, true))
+					if (!FunctionCast(IOCatalogue_removeDrivers, removeDrivers)(gIOCatalogue, dict, true))
 						SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
 					else
 						DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
 					OSSafeReleaseNULL(dict);
 				}
 			}
-			else
+			else if (startMatching_symbol)
+			{
+				for (const char* bundle_identifier : idList)
+				{
+					if (bundle_identifier == idList[i]) continue;
+					if (!FunctionCast(IOCatalogue_startMatching_symbol, startMatching_symbol)(gIOCatalogue, OSSymbol::withCStringNoCopy(bundle_identifier)))
+						SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) failed");
+					else
+						DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) successful");
+				}
+			}
+			else if (startMatching_dictionary)
 			{
 				OSDictionary* dict = OSDictionary::withCapacity(1);
 				dict->setObject("IOProviderClass", OSSymbol::withCStringNoCopy("IOPCIDevice"));
-				if (!gIOCatalogue->startMatching(dict))
-					SYSLOG("BRCMFX", "gIOCatalogue->startMatching failed");
+				if (!FunctionCast(IOCatalogue_startMatching_dictionary, startMatching_dictionary)(gIOCatalogue, dict))
+					SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) failed");
 				else
-					DBGLOG("BRCMFX", "gIOCatalogue->startMatching successful");
+					DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) successful");
 				OSSafeReleaseNULL(dict);
 			}
 		}

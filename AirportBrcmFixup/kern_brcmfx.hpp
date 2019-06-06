@@ -20,7 +20,13 @@ public:
 	void deinit();
 
 private:
-
+	/**
+	 *  Patch kernel
+	 *
+	 *  @param patcher KernelPatcher instance
+	 */
+	void processKernel(KernelPatcher &patcher);
+	
 	/**
 	 *  Patch kext if needed and prepare other patches
 	 *
@@ -51,7 +57,6 @@ private:
 	template <size_t index>
 	static int32_t 			siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
 
-
 	/**
 	 *  Trampolines for original method invocations
 	 */
@@ -59,8 +64,13 @@ private:
 	mach_vm_address_t orgProbe[kextListSize] {};
 	mach_vm_address_t orgWlcSetCountryCodeRev[kextListSize] {};
 	mach_vm_address_t orgSiPmuFvcoPllreg[kextListSize] {};
-	char provider_country_code[5] {""};
 	
+	// access to IOCatalogue methods
+	mach_vm_address_t startMatching_symbol 		{};
+	mach_vm_address_t startMatching_dictionary  {};
+	mach_vm_address_t removeDrivers     	    {};
+	
+	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};
 };
 

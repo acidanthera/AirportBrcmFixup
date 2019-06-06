@@ -83,3 +83,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.1
 - Allow loading on 10.15 without `-lilubetaall`
+
+#### v2.0.2
+- Fixed compatibility with 10.15
