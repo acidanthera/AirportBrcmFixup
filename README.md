@@ -34,6 +34,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - `wl_msg_level=0xXXXX` & `wl_msg_level2=0xXXXX` set log level for native network kexts
 - `-brcmfxwowl` enables WOWL (WoWLAN) - it is disabled by default
 - option `brcmfx-country` also can be injected via DSDT or AddProperties/Arbitrary in Clover
+- `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331
 
 #### Credits
 - [Apple](https://www.apple.com) for macOS  
@@ -42,3 +43,37 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - darkvoid & RehabMan for FakePCIID implementation (partly used in AirportBrcmFixup)
 - [al3xtjames](https://github.com/al3xtjames) for disabling LPO panic in AirPortBrcmNIC 
 - [lvs1974](https://applelife.ru/members/lvs1974.53809/) for writing the software and maintaining it
+
+
+#### Matching device-id and kext name in different macOS versions
+[10.8]
+- AirPortBrcm4360: 43a0, IOProbeScore = 641
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 615
+[10.9]
+- AirPortBrcm4360: 43a0, IOProbeScore = 842
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 700
+[10.10]
+- AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 930
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 900
+[10.11]
+- AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 1040
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+[10.12]
+- AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 1152
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+[10.13]
+- AirPortBrcm4360: 4331, 4353, IOProbeScore = 1240
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1241
+- AirPortBrcmNIC-MFG: 43ba, 43a3, 43a0, IOProbeScore = -1000
+[10.14]
+- AirPortBrcm4360: 4331, 4353, IOProbeScore = 1400
+- AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
+- AirPortBrcmNIC-MFG: 43ba, 43a3, 43a0, IOProbeScore = -1000
+
+Explanation in russian language: (https://applelife.ru/threads/airportbrcmfixup-lilu-plagin-s-naborom-patchej-dlja-wi-fi-kart-broadcom.2355103/page-16#post-751173)
+
+Until version [10.13] there were only two kexts and for the most cases FakeID = 43a0 was enough to get working Wi-Fi.
+In [10.13] (and later) one family was separated into AirPortBrcm4360 (probably will be removed in 10.15), AirPortBrcmNIC and AirPortBrcmNIC-MFG.
+A proper fake-id has to be considered to load appropriate kext. Some device-id have limitations in one kext (like 5 Ghz range), but do not have it another.
