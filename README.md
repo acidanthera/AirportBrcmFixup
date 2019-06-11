@@ -49,23 +49,29 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 [10.8]
 - AirPortBrcm4360: 43a0, IOProbeScore = 641
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 615
+
 [10.9]
 - AirPortBrcm4360: 43a0, IOProbeScore = 842
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 700
+
 [10.10]
 - AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 930
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 900
+
 [10.11]
 - AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 1040
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+
 [10.12]
 - AirPortBrcm4360: 43ba, 43a3, 43a0, 4331, 4353, IOProbeScore = 1152
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
+
 [10.13]
 - AirPortBrcm4360: 4331, 4353, IOProbeScore = 1240
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
 - AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1241
 - AirPortBrcmNIC-MFG: 43ba, 43a3, 43a0, IOProbeScore = -1000
+
 [10.14]
 - AirPortBrcm4360: 4331, 4353, IOProbeScore = 1400
 - AirPortBrcm4331: 4331, 4353, 432b, IOProbeScore = 800
