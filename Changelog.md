@@ -86,3 +86,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.2
 - Fixed compatibility with 10.15
+
+#### v2.0.3
+- Unified binary archive names
