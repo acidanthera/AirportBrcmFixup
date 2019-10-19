@@ -89,3 +89,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.3
 - Unified binary archive names
+
+#### v2.0.4
+- Minor improvement in method findService (based on panic report analysis)

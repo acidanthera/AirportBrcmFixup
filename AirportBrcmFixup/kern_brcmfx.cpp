@@ -262,9 +262,9 @@ IOService* LIBKERN_RETURNS_NOT_RETAINED findService(const IORegistryPlane* plane
 		{
 			while ((service = OSDynamicCast(IOService, all->getFirstObject())))
 			{
-				all->removeObject(service);
 				if (strcmp(service->getName(), service_name) == 0)
 					break;
+				all->removeObject(service);
 			}
 
 			all->release();
