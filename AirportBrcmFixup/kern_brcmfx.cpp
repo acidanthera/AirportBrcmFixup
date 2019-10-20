@@ -241,34 +241,29 @@ void BRCMFX::osl_panic(const char *format, ...)
 //
 // Find service by name in a specified registry plane (gIO80211FamilyPlane or gIOServicePlane)
 //
+
 IOService* LIBKERN_RETURNS_NOT_RETAINED findService(const IORegistryPlane* plane, const char *service_name)
 {
-	IOService            * service = 0;
-	IORegistryIterator   * iter = IORegistryIterator::iterateOver(plane, kIORegistryIterateRecursively);
-	OSOrderedSet         * all = 0;
+	IOService            * service = nullptr;
+	IORegistryIterator   * iterator = IORegistryIterator::iterateOver(plane, kIORegistryIterateRecursively);
 
-	if ( iter)
+	if (iterator)
 	{
-		do
+		size_t len = strlen(service_name);
+		
+		IORegistryEntry *res {nullptr};
+		while ((res = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != nullptr)
 		{
-			if (all)
-				all->release();
-			all = iter->iterateAll();
-		}
-		while (!iter->isValid());
-		iter->release();
-
-		if (all)
-		{
-			while ((service = OSDynamicCast(IOService, all->getFirstObject())))
+			const char *resname = res->getName();
+			if (resname && !strncmp(service_name, resname, len))
 			{
-				if (strcmp(service->getName(), service_name) == 0)
+				service = OSDynamicCast(IOService, res);
+				if (service != nullptr)
 					break;
-				all->removeObject(service);
 			}
-
-			all->release();
 		}
+		
+		iterator->release();
 	}
 
 	return service;
