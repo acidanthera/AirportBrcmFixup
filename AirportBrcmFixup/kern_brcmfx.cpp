@@ -86,9 +86,9 @@ const OSSymbol* BRCMFX::newVendorString(void)
 
 //==============================================================================
 
-bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
+bool BRCMFX::wowCapablePlatform(void *that)
 {
-	DBGLOG("BRCMFX", "wlc_wowl_enable is called, change returned value to false");
+	DBGLOG("BRCMFX", "wowCapablePlatform is called, change returned value to false");
 	return false;
 }
 
@@ -373,8 +373,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				if (!ADDPR(brcmfx_config).enable_wowl)
 				{
 					patcher.clearError();
-					KernelPatcher::RouteRequest request {symbolList[i][6], wlc_wowl_enable};
-					if (!patcher.routeMultiple(index, &request, 1, address, size))
+					KernelPatcher::RouteRequest requests[] {{symbolList[i][6], wowCapablePlatform}};
+					if (!patcher.routeMultiple(index, requests, address, size))
 						SYSLOG("BRCMFX", "wowl disable patch is failed, error = %d", patcher.getError());
 					else
 						DBGLOG("BRCMFX", "wowl disable patch is successfuly applied to %s", idList[i]);

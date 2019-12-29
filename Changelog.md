@@ -93,3 +93,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 #### v2.0.4
 - Minor improvement in method findService (based on panic report analysis)
 - Do not use removeObject, use getNextObject
+
+#### v2.0.5
+- Re-implement wowl disabler (fix bug #615)
