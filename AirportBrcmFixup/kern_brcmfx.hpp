@@ -54,6 +54,7 @@ private:
 	
 	template <size_t index>
 	static bool             checkBoardId(void *that, const char *boardID);
+	static bool             wlc_wowl_enable(int64_t **a1);
 	static bool             wowCapablePlatform(void *that);
 	
 	template <size_t index>

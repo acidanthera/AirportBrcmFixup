@@ -96,3 +96,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.5
 - Re-implement wowl disabler (fix bug #615)
+
+#### v2.0.6
+- Add previous implementation of wowl disabler (both methods wlc_wowl_enable and wowCapablePlatform must be overridden)

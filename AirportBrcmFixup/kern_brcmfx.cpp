@@ -86,6 +86,14 @@ const OSSymbol* BRCMFX::newVendorString(void)
 
 //==============================================================================
 
+bool  BRCMFX::wlc_wowl_enable(int64_t **a1)
+{
+	DBGLOG("BRCMFX", "wlc_wowl_enable is called, change returned value to false");
+	return false;
+}
+
+//==============================================================================
+
 bool BRCMFX::wowCapablePlatform(void *that)
 {
 	DBGLOG("BRCMFX", "wowCapablePlatform is called, change returned value to false");
@@ -350,7 +358,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					// White list restriction patch
 					{symbolList[i][5], checkBoardId[i]},
 					// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
-					{symbolList[i][7], osl_panic}
+					{symbolList[i][6], osl_panic}
 				};
 
 				if (!patcher.routeMultiple(index, requests, address, size))
@@ -373,7 +381,10 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 				if (!ADDPR(brcmfx_config).enable_wowl)
 				{
 					patcher.clearError();
-					KernelPatcher::RouteRequest requests[] {{symbolList[i][6], wowCapablePlatform}};
+					KernelPatcher::RouteRequest requests[] {
+						{symbolList[i][7], wowCapablePlatform},
+						{symbolList[i][8], wlc_wowl_enable}
+					};
 					if (!patcher.routeMultiple(index, requests, address, size))
 						SYSLOG("BRCMFX", "wowl disable patch is failed, error = %d", patcher.getError());
 					else

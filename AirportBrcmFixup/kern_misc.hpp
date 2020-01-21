@@ -40,22 +40,22 @@ static const char *binList[kextListSize] {
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4331.kext/Contents/MacOS/AirPortBrcm4331"
 };
 
-static const char *symbolList[kextListSize][8] {
-	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",   "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
-	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv", "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",
-	 "__ZN19AirPort_BrcmNIC_MFG18wowCapablePlatformEv",  nullptr },
+static const char *symbolList[kextListSize][9] {
+	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",     "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
+	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",   "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",   nullptr,
+	 "__ZN19AirPort_BrcmNIC_MFG18wowCapablePlatformEv", "_wlc_wowl_enable" },
 	
-	{"__ZN16AirPort_Brcm43605startEP9IOService",      "__ZN16AirPort_Brcm43605probeEP9IOServicePi" ,   "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
-	 "__ZNK16AirPort_Brcm436015newVendorStringEv",    "__ZN16AirPort_Brcm436012checkBoardIdEPKc",
-	 "__ZN16AirPort_Brcm436018wowCapablePlatformEv",     nullptr },
+	{"__ZN16AirPort_Brcm43605startEP9IOService",        "__ZN16AirPort_Brcm43605probeEP9IOServicePi" ,   "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
+	 "__ZNK16AirPort_Brcm436015newVendorStringEv",      "__ZN16AirPort_Brcm436012checkBoardIdEPKc",      nullptr,
+	 "__ZN16AirPort_Brcm436018wowCapablePlatformEv",    "_wlc_wowl_enable" },
 	
-	{"__ZN15AirPort_BrcmNIC5startEP9IOService",       "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
-	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",     "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc" ,
-	 "__ZN15AirPort_BrcmNIC18wowCapablePlatformEv",   "_osl_panic" },
+	{"__ZN15AirPort_BrcmNIC5startEP9IOService",         "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
+	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",       "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc",       "_osl_panic",
+	 "__ZN15AirPort_BrcmNIC18wowCapablePlatformEv",     "_wlc_wowl_enable" },
 	
-	{"__ZN16AirPort_Brcm43315startEP9IOService",      "__ZN16AirPort_Brcm43315probeEP9IOServicePi",       nullptr,             "_wlc_set_countrycode_rev",
-	 "__ZNK16AirPort_Brcm433115newVendorStringEv",       nullptr ,
-	 "__ZN16AirPort_Brcm433118wowCapablePlatformEv",     nullptr }
+	{"__ZN16AirPort_Brcm43315startEP9IOService",        "__ZN16AirPort_Brcm43315probeEP9IOServicePi",    nullptr,                "_wlc_set_countrycode_rev",
+	 "__ZNK16AirPort_Brcm433115newVendorStringEv",       nullptr,                                        nullptr,
+	 "__ZN16AirPort_Brcm433118wowCapablePlatformEv",    "_wlc_wowl_enable"   }
 };
 
 inline int find_service_index(const char* service_name)
