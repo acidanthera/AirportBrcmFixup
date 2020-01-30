@@ -180,6 +180,17 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		DBGLOG("BRCMFX", "start: disable service %s", service->getName());
 		return nullptr;
 	}
+	
+	int brcmfx_driver = -1;
+	if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
+	{
+		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+		if (index != brcmfx_driver)
+		{
+			DBGLOG("BRCMFX", "start: disable service %s", service->getName());
+			return nullptr;
+		}
+	}
 
 	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
 	if (data)
@@ -214,6 +225,17 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 	{
 		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
 		return nullptr;
+	}
+	
+	int brcmfx_driver = -1;
+	if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
+	{
+		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+		if (index != brcmfx_driver)
+		{
+			DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
+			return nullptr;
+		}
 	}
 	
 	PCIHookManager::setServiceProvider(provider);
