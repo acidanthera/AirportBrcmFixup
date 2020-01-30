@@ -33,6 +33,7 @@
 			<key>IONameMatch</key>
 			<array>
 				<string>pci14e4,43ba</string>
+				<string>pci14e4,43a3</string>
 				<string>pci14e4,43a0</string>
 				<string>pci14e4,43b1</string>
 				<string>pci14e4,43b2</string>
