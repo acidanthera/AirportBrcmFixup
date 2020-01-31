@@ -27,7 +27,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - AirportBrcmFixup + FakePCIID + FakePCIID_Broadcom_WiFi.kext
 
 #### Boot-args
-- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties
+- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
 - `-brcmfxdbg` turns on debugging output
 - `-brcmfxbeta` enables loading on unsupported osx
 - `-brcmfxoff` disables kext loading
