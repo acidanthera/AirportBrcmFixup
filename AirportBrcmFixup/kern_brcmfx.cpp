@@ -173,16 +173,15 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	
 	int index = find_service_index(service->getName());
-	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) ||
-						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
+	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
+	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
 		DBGLOG("BRCMFX", "start: disable service %s", service->getName());
 		return nullptr;
 	}
 	
-	int brcmfx_driver = -1;
-	if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
+	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
 	{
 		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
 		if (index != brcmfx_driver)
@@ -219,16 +218,15 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 {
 	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	int index = find_service_index(service->getName());
-	bool disable_driver = (ADDPR(brcmfx_config).brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) ||
-						  (ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != index);
+	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
+	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
 		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
 		return nullptr;
 	}
-	
-	int brcmfx_driver = -1;
-	if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
+
+	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
 	{
 		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
 		if (index != brcmfx_driver)
