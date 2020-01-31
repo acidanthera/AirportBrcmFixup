@@ -27,12 +27,12 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - AirportBrcmFixup + FakePCIID + FakePCIID_Broadcom_WiFi.kext
 
 #### Boot-args
-- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or AddProperties/Arbitrary in Clover
+- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties
 - `-brcmfxdbg` turns on debugging output
 - `-brcmfxbeta` enables loading on unsupported osx
 - `-brcmfxoff` disables kext loading
 - `-brcmfxwowl` enables WOWL (WoWLAN) - it is disabled by default
-- `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or AddProperties/Arbitrary in Clover
+- `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
 
 #### Credits
 - [Apple](https://www.apple.com) for macOS  
