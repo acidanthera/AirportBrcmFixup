@@ -420,22 +420,29 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 			{
 				auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
 				auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
-				
-				IOService *provider = service->getProvider();
-				
 				bool success = false;
-				if (service->requestTerminate(provider, 0) && service->terminate()) {
-					service->stop(provider);
-					success = true;
-				}
-				
-				DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-				
-				if (provider->isOpen(service))
+
+				IOService *provider = service->getProvider();
+				if (provider != nullptr)
 				{
-					provider->close(service);
-					DBGLOG("BRCMFX", "FakeBrcm was closed");
+					provider->retain();
+					if (service->terminate()) {
+						service->stop(provider);
+						success = true;
+					}
+					
+					DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
+					
+					if (provider->isOpen(service))
+					{
+						provider->close(service);
+						DBGLOG("BRCMFX", "FakeBrcm was closed");
+					}
+					
+					provider->release();
 				}
+				else
+					success = true;
 				
 				if (success && bundle && ioclass && removeDrivers)
 				{

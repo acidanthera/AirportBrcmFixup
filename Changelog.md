@@ -101,3 +101,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 - Add previous implementation of wowl disabler (both methods wlc_wowl_enable and wowCapablePlatform must be overridden)
 - Add support for DW1820A CN-096JNT & Fix freezing issues (thanks to Sniki)
 - Read property brcmfx-driver from provider's IOReg entry (can be injected by bootloader as well as brcmfx-country property)
+
+#### v2.0.7
+- Fix for kernel panic when FakeBrcm is detached from provider (provider->close(service))
