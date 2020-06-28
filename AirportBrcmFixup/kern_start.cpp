@@ -47,7 +47,7 @@ PluginConfiguration ADDPR(config) {
 	ADDPR(brcmfx_config).bootargBeta,
 	arrsize(ADDPR(brcmfx_config).bootargBeta),
 	KernelVersion::MountainLion,
-	KernelVersion::Catalina,
+	KernelVersion::BigSur,
 	[]() {
 		ADDPR(brcmfx_config).readArguments();
 		brcmfx.init();

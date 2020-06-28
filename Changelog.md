@@ -104,3 +104,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.7
 - Fix for kernel panic when FakeBrcm is detached from provider (provider->close(service))
+
+#### v2.0.8
+- Added constants for 11.0 support
