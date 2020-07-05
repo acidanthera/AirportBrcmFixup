@@ -204,7 +204,6 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	if (!name || strcmp(name, "ARPT") != 0)
 		WIOKit::renameDevice(provider, "ARPT");
 	
-	PCIHookManager::setServiceProvider(provider);
 	PCIHookManager::hookProvider(provider);
 
 	bool result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
@@ -236,7 +235,6 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 		}
 	}
 	
-	PCIHookManager::setServiceProvider(provider);
 	PCIHookManager::hookProvider(provider);
 
 	IOService *result = FunctionCast(probe, callbackBRCMFX->orgProbe[index])(service, provider, score);

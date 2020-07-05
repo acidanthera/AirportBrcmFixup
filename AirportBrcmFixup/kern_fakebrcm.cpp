@@ -5,6 +5,7 @@
 //  Copyright © 2017 lvs1974. All rights reserved.
 //
 
+#include <IOKit/pci/IOPCIDevice.h>
 #include <Headers/plugin_start.hpp>
 
 #include "kern_config.hpp"
@@ -43,7 +44,7 @@ UInt16 PCIHookManager::configRead16(IORegistryEntry *service, UInt32 space, UInt
 	UInt16 newResult = result;
 	
 	if ((offset == WIOKit::PCIRegister::kIOPCIConfigVendorID || offset == WIOKit::PCIRegister::kIOPCIConfigDeviceID) && isServiceSupported(service))
-		switch (offset)
+    switch (offset)
 	{
 		case WIOKit::PCIRegister::kIOPCIConfigVendorID:
 		{
@@ -92,15 +93,33 @@ UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt
 
 //==============================================================================
 
-void PCIHookManager::setServiceProvider(IOService *provider)
-{
-	service_provider = provider;
-}
-
-//==============================================================================
-
 void PCIHookManager::hookProvider(IOService *provider)
 {
+    auto pciDevice = OSDynamicCast(IOPCIDevice, provider);
+    if (!pciDevice)
+        return;
+
+    uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
+    uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
+    uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
+    uint16_t subSystemDeviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID);
+    // disable APSM for Broadcom BCM4350 chipset
+    if (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b)
+    {
+        DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
+               subSystemVendorID, subSystemDeviceID);
+        auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
+        if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != 0)
+        {
+            DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to 0");
+            provider->setProperty("pci-aspm-default", 0ULL, 32);
+        }
+        
+        pciDevice->setASPMState(provider, 0);
+    }
+
+    service_provider = provider;
+
 	UInt32 vendor, device;
 	if (WIOKit::getOSDataValue(provider, "device-id", device) && WIOKit::getOSDataValue(provider, "vendor-id", vendor))
 	{
@@ -147,7 +166,6 @@ bool FakeBrcm::init(OSDictionary *propTable)
 
 bool FakeBrcm::attach(IOService *provider)
 {
-	PCIHookManager::setServiceProvider(provider);
 	PCIHookManager::hookProvider(provider);
 	
 	return super::attach(provider);
@@ -242,7 +260,6 @@ bool FakeBrcm::start(IOService *provider)
 		return false;
 	}
 	
-	PCIHookManager::setServiceProvider(provider);
 	PCIHookManager::hookProvider(provider);
 
 	return true;

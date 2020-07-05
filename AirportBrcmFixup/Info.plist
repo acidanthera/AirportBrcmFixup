@@ -148,6 +148,6 @@
 		<string>12.0.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
-	<string>Network-Root</string>
+	<string>Root</string>
 </dict>
 </plist>

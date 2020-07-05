@@ -24,7 +24,6 @@ class EXPORT PCIHookManager
 	static WIOKit::t_PCIConfigRead32    orgConfigRead32;
 
 public:
-	static void setServiceProvider(IOService* provider);
 	static void hookProvider(IOService* provider);
 };
 

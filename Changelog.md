@@ -107,3 +107,5 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 
 #### v2.0.8
 - Added constants for 11.0 support
+- Property 'pci-aspm-default' with value 0 is not required for Broadcom BCM4350 chipset (with non-apple subsystem-vendor-id), 
+since now it is injected/corrected and method IOPCIFamily::setASPMState called for provider to disable ASPM immediately.
