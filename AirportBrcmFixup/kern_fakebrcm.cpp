@@ -102,12 +102,11 @@ void PCIHookManager::hookProvider(IOService *provider)
     uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
     uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
     uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
-    uint16_t subSystemDeviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID);
     // disable APSM for Broadcom BCM4350 chipset
     if (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b)
     {
         DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
-               subSystemVendorID, subSystemDeviceID);
+               subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
         auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
         if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != 0)
         {
