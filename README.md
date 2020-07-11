@@ -76,6 +76,18 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
 - AirPortBrcmNIC-MFG: 43ba, 43a3, 43a0, IOProbeScore = -1000
 
+[10.15]
+- AirPortBrcm4360: 4331, 4353, IOProbeScore = 1400
+- AirPortBrcm4331: removed
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
+- AirPortBrcmNIC-MFG: removed
+
+[10.16]
+- AirPortBrcm4360: removed
+- AirPortBrcm4331: removed
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
+- AirPortBrcmNIC-MFG: removed
+
 Explanation in russian language: (https://applelife.ru/threads/airportbrcmfixup-lilu-plagin-s-naborom-patchej-dlja-wi-fi-kart-broadcom.2355103/page-16#post-751173)
 
 Until version [10.13] there were only two kexts and for the most cases FakeID = 43a0 was enough to get working Wi-Fi.
