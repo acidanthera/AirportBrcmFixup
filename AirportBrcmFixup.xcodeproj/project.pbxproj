@@ -11,6 +11,8 @@
 		CE405EC91E49DD9700AA0B3D /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE405EC71E49DD7100AA0B3D /* libkmod.a */; };
 		CE405ED91E4A080700AA0B3D /* plugin_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE405ED81E4A080700AA0B3D /* plugin_start.cpp */; };
 		F641B3981F33857B009B3996 /* kern_misc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F641B3971F33857B009B3996 /* kern_misc.hpp */; };
+		F660AAED24BA176D00BF749E /* AirPortBrcm4360_Injector.kext in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F660AAEE24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F67C73C61E68AD890061CB0A /* kern_config.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F67C73C51E68AD890061CB0A /* kern_config.hpp */; };
 		F6C535E81E60963800A3A34B /* kern_brcmfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */; };
 		F6C535E91E60963800A3A34B /* kern_brcmfx.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */; };
@@ -19,13 +21,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		1C642F521C8F157A006B4C51 /* CopyFiles */ = {
+		F660AAEF24BA176D00BF749E /* Embed PlugIns */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				F660AAEE24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext in Embed PlugIns */,
+				F660AAED24BA176D00BF749E /* AirPortBrcm4360_Injector.kext in Embed PlugIns */,
 			);
+			name = "Embed PlugIns";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -53,6 +58,8 @@
 		CE405ED81E4A080700AA0B3D /* plugin_start.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = plugin_start.cpp; sourceTree = "<group>"; };
 		CE405EDA1E4A080F00AA0B3D /* plugin_start.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = plugin_start.hpp; sourceTree = "<group>"; };
 		F641B3971F33857B009B3996 /* kern_misc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_misc.hpp; sourceTree = "<group>"; };
+		F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcm4360_Injector.kext; path = Resources/AirPortBrcm4360_Injector.kext; sourceTree = "<group>"; };
+		F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcmNIC_Injector.kext; path = Resources/AirPortBrcmNIC_Injector.kext; sourceTree = "<group>"; };
 		F67C73C51E68AD890061CB0A /* kern_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_config.hpp; sourceTree = "<group>"; };
 		F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_brcmfx.cpp; sourceTree = "<group>"; };
 		F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_brcmfx.hpp; sourceTree = "<group>"; };
@@ -79,6 +86,7 @@
 				1C748C291C21952C0024EED2 /* AirportBrcmFixup */,
 				CE405EC81E49DD7B00AA0B3D /* SDK */,
 				1C748C281C21952C0024EED2 /* Products */,
+				F61DF88C24BA12AF007F9208 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -155,6 +163,15 @@
 			name = SDK;
 			sourceTree = "<group>";
 		};
+		F61DF88C24BA12AF007F9208 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */,
+				F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -180,8 +197,8 @@
 				1C748C231C21952C0024EED2 /* Frameworks */,
 				1C748C241C21952C0024EED2 /* Headers */,
 				1C748C251C21952C0024EED2 /* Resources */,
-				1C642F521C8F157A006B4C51 /* CopyFiles */,
 				F6AC609A2052C61300376609 /* Archive */,
+				F660AAEF24BA176D00BF749E /* Embed PlugIns */,
 			);
 			buildRules = (
 			);

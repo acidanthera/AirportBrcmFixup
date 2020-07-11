@@ -109,3 +109,8 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 - Added constants for 11.0 support
 - Property 'pci-aspm-default' with value 0 is not required for Broadcom BCM4350 chipset (with non-apple subsystem-vendor-id), 
 since now it is injected/corrected and method IOPCIFamily::setASPMState called for provider to disable ASPM immediately.
+- Add required dependencies into OSBundleLibraries section
+- Remove injectors for AirPortBrcm4360 and AirPortBrcmNIC from main Info.plist and move them into separate plugins AirPortBrcm4360_Injector and 
+AirPortBrcmNIC_Injector (kexts with plist only).
+Under 10.16 (Big Sur) plugin AirPortBrcm4360_Injector.kext must be blocked by MaxKernel 19.9.9 or just removed, otherwise it will block loading of AirPortBrcmNIC
+since class AirPortBrcm4360 is unsupported.
