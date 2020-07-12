@@ -93,3 +93,11 @@ Explanation in russian language: (https://applelife.ru/threads/airportbrcmfixup-
 Until version [10.13] there were only two kexts and for the most cases FakeID = 43a0 was enough to get working Wi-Fi.
 In [10.13] (and later) one family was separated into AirPortBrcm4360 (probably will be removed in 10.15), AirPortBrcmNIC and AirPortBrcmNIC-MFG.
 A proper fake-id has to be considered to load appropriate kext. Some device-id have limitations in one kext (like 5 Ghz range), but do not have it another.
+
+#### Please pay attention
+In 10.16 (Big Sur) class AirPortBrcm4360 has been completely removed. Using of injector kext with such class name and matched vendor-id:device-id blocks
+loading of original airport kext. To address this issue and keep compatibility with older systems injectors for AirPortBrcm4360 and AirPortBrcmNIC were removed
+from main Info.plist file. Instead, the two new kext injectors are deployed in PlugIns folder: AirPortBrcm4360_Injector.kext and AirPortBrcmNIC_Injector.kext.
+You have to block (or remove AirPortBrcm4360_Injector.kext) in BigSur. In OpenCore you can specify MaxKernel 19.9.9 for AirPortBrcm4360_Injector.kext.
+In Clover you can have two different AirportBrcmFixup.kext, but in kext folder with version name 10.16 AirportBrcmFixup.kext must not contain AirPortBrcm4360_Injector.kext.
+
