@@ -36,7 +36,12 @@ private:
 	 *  @param size    kinfo memory size
 	 */
 	void processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size);
-
+	
+	/**
+	 * check and fix brcmfx_driver agrument, return -1 if it cannot be applied
+	 */
+	static int checkAndFixBrcmfxDriverValue(int brcmfx_driver);
+	
 	/**
 	 *  Symbol types
 	 */

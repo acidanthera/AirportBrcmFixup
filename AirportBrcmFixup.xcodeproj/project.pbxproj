@@ -61,9 +61,9 @@
 		F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcm4360_Injector.kext; path = Resources/AirPortBrcm4360_Injector.kext; sourceTree = "<group>"; };
 		F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcmNIC_Injector.kext; path = Resources/AirPortBrcmNIC_Injector.kext; sourceTree = "<group>"; };
 		F67C73C51E68AD890061CB0A /* kern_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_config.hpp; sourceTree = "<group>"; };
-		F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_brcmfx.cpp; sourceTree = "<group>"; };
-		F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_brcmfx.hpp; sourceTree = "<group>"; };
-		F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_fakebrcm.cpp; sourceTree = "<group>"; };
+		F6C535E61E60963800A3A34B /* kern_brcmfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_brcmfx.cpp; sourceTree = "<group>"; usesTabs = 1; };
+		F6C535E71E60963800A3A34B /* kern_brcmfx.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_brcmfx.hpp; sourceTree = "<group>"; usesTabs = 1; };
+		F6D1655F1F2F86090022B27D /* kern_fakebrcm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kern_fakebrcm.cpp; sourceTree = "<group>"; usesTabs = 1; };
 		F6D165601F2F86090022B27D /* kern_fakebrcm.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_fakebrcm.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 

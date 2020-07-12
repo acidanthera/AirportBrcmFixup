@@ -168,12 +168,52 @@ int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 
 //==============================================================================
 
+int BRCMFX::checkAndFixBrcmfxDriverValue(int brcmfx_driver)
+{
+	if (brcmfx_driver != -1)
+	{
+		if (getKernelVersion() <= KernelVersion::Sierra)
+		{
+			if (brcmfx_driver == AirPort_BrcmNIC_MFG || brcmfx_driver == AirPort_BrcmNIC) {
+				DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Sierra and earlier", brcmfx_driver);
+				return -1;
+			}
+		}
+		else if (getKernelVersion() >= KernelVersion::Catalina)
+		{
+			if (brcmfx_driver == AirPort_BrcmNIC_MFG || brcmfx_driver == AirPort_Brcm4331) {
+				DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Catalina and over", brcmfx_driver);
+				return -1;
+			}
+			if (getKernelVersion() >= KernelVersion::BigSur)
+			{
+				if (brcmfx_driver == AirPort_Brcm4360) {
+					DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Big Sur and over", brcmfx_driver);
+					return -1;
+				}
+			}
+		}
+	}
+	
+	return brcmfx_driver;
+}
+
+//==============================================================================
+
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	
 	int index = find_service_index(service->getName());
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
+	if (brcmfx_driver == -1) {
+		brcmfx_driver = WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver);
+		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+	} else {
+		DBGLOG("BRCMFX", "brcmfx-driver in boot-arg is set to %d", brcmfx_driver);
+	}
+	brcmfx_driver = checkAndFixBrcmfxDriverValue(brcmfx_driver);
+		
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
@@ -181,16 +221,6 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		return nullptr;
 	}
 	
-	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
-	{
-		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
-		if (index != brcmfx_driver)
-		{
-			DBGLOG("BRCMFX", "start: disable service %s", service->getName());
-			return nullptr;
-		}
-	}
-
 	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
 	if (data)
 	{
@@ -218,21 +248,19 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
 	int index = find_service_index(service->getName());
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
+	if (brcmfx_driver == -1) {
+		brcmfx_driver = WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver);
+		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+    } else {
+		DBGLOG("BRCMFX", "brcmfx-driver in boot-arg is set to %d", brcmfx_driver);
+	}
+	brcmfx_driver = checkAndFixBrcmfxDriverValue(brcmfx_driver);
+	
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
 		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
 		return nullptr;
-	}
-
-	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver))
-	{
-		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
-		if (index != brcmfx_driver)
-		{
-			DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
-			return nullptr;
-		}
 	}
 	
 	PCIHookManager::hookProvider(provider);
