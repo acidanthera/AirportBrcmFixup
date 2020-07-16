@@ -85,8 +85,6 @@
 		<string>1.2.6</string>
 		<key>com.apple.driver.corecapture</key>
 		<string>1.0.0</string>
-		<key>com.apple.iokit.IO80211Family</key>
-		<string>600.0</string>
 		<key>com.apple.iokit.IONetworkingFamily</key>
 		<string>1.5</string>
 		<key>com.apple.iokit.IOPCIFamily</key>
@@ -105,6 +103,6 @@
 		<string>12.0.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
-	<string>Root</string>
+	<string>Network-Root</string>
 </dict>
 </plist>

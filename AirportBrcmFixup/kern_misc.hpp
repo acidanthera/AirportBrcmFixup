@@ -58,12 +58,56 @@ static const char *symbolList[kextListSize][9] {
 	 "__ZN16AirPort_Brcm433118wowCapablePlatformEv",    "_wlc_wowl_enable"   }
 };
 
+/**
+* find service internal index by name
+*/
+
 inline int find_service_index(const char* service_name)
 {
 	for (int i=0; i<kextListSize; ++i)
 		if (!strcmp(serviceNameList[i], service_name))
 			return i;
 	return -1;
+}
+
+/**
+ * check and fix brcmfx_driver agrument, return -1 if it cannot be applied
+ */
+
+inline int checkAndFixBrcmfxDriverValue(int brcmfx_driver, bool skip_log = false)
+{
+	if (brcmfx_driver != -1)
+	{
+		if (getKernelVersion() <= KernelVersion::Sierra)
+		{
+			if (brcmfx_driver == AirPort_BrcmNIC_MFG || brcmfx_driver == AirPort_BrcmNIC) {
+				if (!skip_log) {
+					DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Sierra and earlier", brcmfx_driver);
+				}
+				return -1;
+			}
+		}
+		else if (getKernelVersion() >= KernelVersion::Catalina)
+		{
+			if (brcmfx_driver == AirPort_BrcmNIC_MFG || brcmfx_driver == AirPort_Brcm4331) {
+				if (!skip_log) {
+					DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Catalina and over", brcmfx_driver);
+				}
+				return -1;
+			}
+			if (getKernelVersion() >= KernelVersion::BigSur)
+			{
+				if (brcmfx_driver == AirPort_Brcm4360) {
+					if (!skip_log) {
+						DBGLOG("BRCMFX", "brcmfx-driver %d is not supported in osx Big Sur and over", brcmfx_driver);
+					}
+					return -1;
+				}
+			}
+		}
+	}
+	
+	return brcmfx_driver;
 }
 
 #endif /* kern_misc_hpp */

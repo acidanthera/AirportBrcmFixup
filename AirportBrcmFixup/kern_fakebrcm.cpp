@@ -197,8 +197,12 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	
 	DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", provider->getName());
 	
-	for (size_t i = 0; i < kextListSize; i++)
+	for (int i = 0; i < kextListSize; i++)
 	{
+		int brcmfx_driver = checkAndFixBrcmfxDriverValue(i, true);
+		if (i != brcmfx_driver)
+			continue;
+		
 		const OSMetaClass * meta_class = OSMetaClass::getMetaClassWithName(OSSymbol::withCStringNoCopy(serviceNameList[i]));
 		if (meta_class != nullptr)
 		{
