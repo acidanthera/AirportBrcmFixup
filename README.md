@@ -34,7 +34,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 
 #### Specific boot-args and ioreg properties
 - `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
-- `brcmfx-aspm`  overrides value used for pci-aspm-default (only for Broadcom BCM4350 chipset 14e4:43a3)
+- `brcmfx-aspm`  overrides value used for pci-aspm-default
 - `brcmfx-wowl` enables/disables WoWLAN patch
 - `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
 
