@@ -74,7 +74,7 @@ inline int find_service_index(const char* service_name)
  * check and fix brcmfx_driver agrument, return -1 if it cannot be applied
  */
 
-inline int checkAndFixBrcmfxDriverValue(int brcmfx_driver, bool skip_log = false)
+inline int checkBrcmfxDriverValue(int brcmfx_driver, bool skip_log = false)
 {
 	if (brcmfx_driver != -1)
 	{

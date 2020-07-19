@@ -32,8 +32,8 @@ void Configuration::readArguments() {
 
 	PE_parse_boot_argn(bootargBrcmDriver, &brcmfx_driver, sizeof(brcmfx_driver));
 
-	disabled = checkKernelArgument(bootargOff[0]);
-	enable_wowl = checkKernelArgument(bootargBrcmEnableWowl);
+	disabled = checkKernelArgument(bootargOff[0]);	
+	enable_wowl = checkKernelArgument("-brcmfxwowl");
 }
 
 PluginConfiguration ADDPR(config) {

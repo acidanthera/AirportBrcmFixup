@@ -20,8 +20,9 @@ public:
 	static const char *bootargDebug[];
 	static const char *bootargBeta[];
 	static constexpr const char *bootargBrcmCountry {"brcmfx-country"};     // 5 Ghz patch - change default country
-	static constexpr const char *bootargBrcmEnableWowl {"-brcmfxwowl"};     // enable WOWL
+	static constexpr const char *bootargBrcmEnableWowl {"brcmfx-wowl"};     // enable WOWL
 	static constexpr const char *bootargBrcmDriver {"brcmfx-driver"};
+	static constexpr const char *bootargBrcmAspm {"brcmfx-aspm"};
 	
 	
 	/**

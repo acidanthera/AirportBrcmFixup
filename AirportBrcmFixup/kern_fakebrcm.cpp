@@ -106,16 +106,33 @@ void PCIHookManager::hookProvider(IOService *provider)
 	// disable APSM for Broadcom BCM4350 chipset
 	if (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b)
 	{
+		IOOptionBits brcmfx_aspm = 0;
+		if (PE_parse_boot_argn(Configuration::bootargBrcmAspm, &brcmfx_aspm, sizeof(brcmfx_aspm))) {
+			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmAspm, brcmfx_aspm);
+		} else if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmAspm, brcmfx_aspm)) {
+			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmAspm, brcmfx_aspm);
+		}
+		
 		DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
 			   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
 		auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
-		if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != 0)
+		if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != brcmfx_aspm)
 		{
-			DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to 0");
-			provider->setProperty("pci-aspm-default", 0ULL, 32);
+			DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", brcmfx_aspm);
+			provider->setProperty("pci-aspm-default", brcmfx_aspm, 32);
 		}
 		
-		pciDevice->setASPMState(provider, 0);
+		pciDevice->setASPMState(provider, brcmfx_aspm);
+	}
+	
+	UInt32 enable_wowl = 0;
+	if (PE_parse_boot_argn(Configuration::bootargBrcmEnableWowl, &enable_wowl, sizeof(enable_wowl))) {
+		DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmEnableWowl, enable_wowl);
+		ADDPR(brcmfx_config).enable_wowl = (enable_wowl != 0);
+	}
+	else if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmEnableWowl, enable_wowl)) {
+		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmEnableWowl, enable_wowl);
+		ADDPR(brcmfx_config).enable_wowl = (enable_wowl != 0);
 	}
 
 	service_provider = provider;
@@ -199,7 +216,7 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	
 	for (int i = 0; i < kextListSize; i++)
 	{
-		int brcmfx_driver = checkAndFixBrcmfxDriverValue(i, true);
+		int brcmfx_driver = checkBrcmfxDriverValue(i, true);
 		if (i != brcmfx_driver)
 			continue;
 		

@@ -27,12 +27,24 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - AirportBrcmFixup + FakePCIID + FakePCIID_Broadcom_WiFi.kext
 
 #### Boot-args
-- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
 - `-brcmfxdbg` turns on debugging output
 - `-brcmfxbeta` enables loading on unsupported osx
 - `-brcmfxoff` disables kext loading
 - `-brcmfxwowl` enables WOWL (WoWLAN) - it is disabled by default
+
+#### Specific boot-args and ioreg properties
+- `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
+- `brcmfx-aspm`  overrides value used for pci-aspm-default (only for Broadcom BCM4350 chipset 14e4:43a3)
+- `brcmfx-wowl` enables/disables WoWLAN patch
 - `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
+
+Possible values for brcmfx-aspm (and pci-aspm-default):
+- `kIOPCIExpressASPML0s` = 0x00000001,
+- `kIOPCIExpressASPML1` = 0x00000002,
+- `kIOPCIExpressCommonClk` = 0x00000040,
+- `kIOPCIExpressClkReq` = 0x00000100
+
+
 
 #### Credits
 - [Apple](https://www.apple.com) for macOS  

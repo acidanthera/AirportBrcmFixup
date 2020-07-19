@@ -175,11 +175,11 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	int index = find_service_index(service->getName());
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
 	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
-		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
 	} else {
-		DBGLOG("BRCMFX", "brcmfx-driver in boot-arg is set to %d", brcmfx_driver);
+		DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
 	}
-	brcmfx_driver = checkAndFixBrcmfxDriverValue(brcmfx_driver);
+	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 		
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
@@ -192,7 +192,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	if (data)
 	{
 		lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
-		DBGLOG("BRCMFX", "brcmfx-country in ioreg is set to %s", callbackBRCMFX->provider_country_code);
+		DBGLOG("BRCMFX", "%s in ioreg is set to %s", Configuration::bootargBrcmCountry, callbackBRCMFX->provider_country_code);
 	}
 	
 	auto name = provider->getName();
@@ -216,11 +216,11 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 	int index = find_service_index(service->getName());
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
 	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
-		DBGLOG("BRCMFX", "brcmfx-driver in ioreg is set to %d", brcmfx_driver);
+		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
     } else {
-		DBGLOG("BRCMFX", "brcmfx-driver in boot-arg is set to %d", brcmfx_driver);
+		DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
 	}
-	brcmfx_driver = checkAndFixBrcmfxDriverValue(brcmfx_driver);
+	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 	
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
