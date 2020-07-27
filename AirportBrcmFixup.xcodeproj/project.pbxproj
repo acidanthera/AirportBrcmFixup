@@ -197,8 +197,8 @@
 				1C748C231C21952C0024EED2 /* Frameworks */,
 				1C748C241C21952C0024EED2 /* Headers */,
 				1C748C251C21952C0024EED2 /* Resources */,
-				F6AC609A2052C61300376609 /* Archive */,
 				F660AAEF24BA176D00BF749E /* Embed PlugIns */,
+				F6AC609A2052C61300376609 /* Archive */,
 			);
 			buildRules = (
 			);
