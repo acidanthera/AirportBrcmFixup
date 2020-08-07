@@ -109,25 +109,28 @@ void PCIHookManager::hookProvider(IOService *provider)
 		} else if ((aspm_value_forced = WIOKit::getOSDataValue(provider, Configuration::bootargBrcmAspm, brcmfx_aspm))) {
 			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmAspm, brcmfx_aspm);
 		}
-
-		uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
-		uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
-		uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
-		// change APSM flags if value has been forced or for Broadcom BCM4350 chipset
-		if (aspm_value_forced || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
+		
+		if (brcmfx_aspm != 0xFF)
 		{
-			DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
-				   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
-			auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
-			if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != brcmfx_aspm)
+			uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
+			uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
+			uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
+			// change APSM flags if value has been forced or for Broadcom BCM4350 chipset
+			if (aspm_value_forced || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
 			{
-				DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", brcmfx_aspm);
-				provider->setProperty("pci-aspm-default", brcmfx_aspm, 32);
+				DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
+					   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
+				auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
+				if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != brcmfx_aspm)
+				{
+					DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", brcmfx_aspm);
+					provider->setProperty("pci-aspm-default", brcmfx_aspm, 32);
+				}
+				
+				auto result = pciDevice->setASPMState(provider, brcmfx_aspm);
+				if (result != KERN_SUCCESS)
+					SYSLOG("BRCMFX", "setASPMState failed with result %x", result);
 			}
-			
-			auto result = pciDevice->setASPMState(provider, brcmfx_aspm);
-			if (result != KERN_SUCCESS)
-				SYSLOG("BRCMFX", "setASPMState failed with result %x", result);
 		}
 		
 		UInt32 enable_wowl = 0;
