@@ -112,7 +112,7 @@ since now it is injected/corrected and method IOPCIFamily::setASPMState called f
 - Add required dependencies into OSBundleLibraries section
 - Remove injectors for AirPortBrcm4360 and AirPortBrcmNIC from main Info.plist and move them into separate plugins AirPortBrcm4360_Injector and 
 AirPortBrcmNIC_Injector (kexts with plist only).
-Under 10.16 (Big Sur) plugin AirPortBrcm4360_Injector.kext must be blocked by MaxKernel 19.9.9 or just removed, otherwise it will block loading of AirPortBrcmNIC
+Under 11.0 (Big Sur) plugin AirPortBrcm4360_Injector.kext must be blocked by MaxKernel 19.9.9 or just removed, otherwise it will block loading of AirPortBrcmNIC
 since class AirPortBrcm4360 is unsupported.
 - Check whether brcmfx-driver value is incorrect (if specified value is unsupported in current osx system)
 - Support boot-arg and property `brcmfx-aspm` to override value used for pci-aspm-default 
