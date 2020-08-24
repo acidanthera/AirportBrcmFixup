@@ -83,10 +83,6 @@
 	<dict>
 		<key>as.vit9696.Lilu</key>
 		<string>1.2.6</string>
-		<key>com.apple.driver.corecapture</key>
-		<string>1.0.0</string>
-		<key>com.apple.iokit.IONetworkingFamily</key>
-		<string>1.5</string>
 		<key>com.apple.iokit.IOPCIFamily</key>
 		<string>2.7</string>
 		<key>com.apple.kpi.bsd</key>

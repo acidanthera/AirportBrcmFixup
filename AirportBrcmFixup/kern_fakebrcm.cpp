@@ -97,8 +97,10 @@ UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt
 void PCIHookManager::hookProvider(IOService *provider)
 {
 	auto pciDevice = OSDynamicCast(IOPCIDevice, provider);
-	if (!pciDevice)
+	if (!pciDevice) {
+		DBGLOG("BRCMFX", "Provider is not IOPCIDevice");
 		return;
+	}
 	
 	if (service_provider == nullptr)
 	{
@@ -228,13 +230,13 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 		int brcmfx_driver = checkBrcmfxDriverValue(i, true);
 		if (i != brcmfx_driver)
 			continue;
-		
+
 		const OSMetaClass * meta_class = OSMetaClass::getMetaClassWithName(OSSymbol::withCStringNoCopy(serviceNameList[i]));
 		if (meta_class != nullptr)
 		{
 			DBGLOG("BRCMFX", "FakeBrcm::probe(): meta class for %s exists!", serviceNameList[i]);
 
-			IOService *service = (IOService *) OSMetaClass::allocClassWithName(serviceNameList[i]);
+			IOService *service = OSDynamicCast(IOService, meta_class->alloc());
 			if (service != nullptr)
 			{
 				service->retain();

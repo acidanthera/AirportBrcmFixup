@@ -10,10 +10,13 @@
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
 #include "kern_fakebrcm.hpp"
+#include "plugin_start.hpp"
 
 #include <IOKit/IOCatalogue.h>
+#include <IOKit/IOTimerEventSource.h>
 
 #define kCFBundleIdentifierKey                  "CFBundleIdentifier"
+#define kCFBundleIdentifierKernelKey            "CFBundleIdentifierKernel"
 #define KIOClass                  				"IOClass"
 
 // Only used in apple-driven callbacks
@@ -296,10 +299,16 @@ void BRCMFX::processKernel(KernelPatcher &patcher)
 	if (!startMatching_symbol && !startMatching_dictionary)
 	{
 		startMatching_symbol = reinterpret_cast<IOCatalogue_startMatching_symbol>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEPK8OSSymbol"));
-		if (!startMatching_symbol)
-			startMatching_dictionary = reinterpret_cast<IOCatalogue_startMatching_dictionary>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEP12OSDictionary"));
+		startMatching_dictionary = reinterpret_cast<IOCatalogue_startMatching_dictionary>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEP12OSDictionary"));
 		if (!startMatching_symbol && !startMatching_dictionary)
 			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::startMatching method, error = %d", patcher.getError());
+	}
+	
+	if (!findDrivers)
+	{
+		findDrivers = reinterpret_cast<IOCatalogue_findDrivers>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue11findDriversEP12OSDictionaryPi"));
+		if (!findDrivers)
+			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::findDrivers method, error = %d", patcher.getError());
 	}
 	
 	if (!removeDrivers)
@@ -408,30 +417,20 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 			ADDPR(brcmfx_config).disabled = true;
 			
 			IOService *service = findService(gIOServicePlane, "FakeBrcm");
-			if (service && service->getProvider() != nullptr)
+			if (service && service->getProvider())
 			{
 				auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
 				auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
 				bool success = false;
 
 				IOService *provider = service->getProvider();
-				if (provider != nullptr)
+				if (provider)
 				{
 					provider->retain();
-					if (service->terminate()) {
-						service->stop(provider);
+					if (service->terminate())
 						success = true;
-					}
-					
-					DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-					
-					if (provider->isOpen(service))
-					{
-						provider->close(service);
-						DBGLOG("BRCMFX", "FakeBrcm was closed");
-					}
-					
 					provider->release();
+					DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
 				}
 				else
 					success = true;
@@ -442,7 +441,7 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					if (dict) {
 						dict->setObject(kCFBundleIdentifierKey, bundle);
 						dict->setObject(KIOClass, ioclass);
-						if (!removeDrivers(gIOCatalogue, dict, true))
+						if (!removeDrivers(gIOCatalogue, dict, false))
 							SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
 						else
 							DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
@@ -450,40 +449,104 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					}
 				}
 			}
-			else if (startMatching_symbol)
-			{
-				for (const char* bundle_identifier : idList)
-				{
-					if (bundle_identifier == idList[i]) continue;
-					auto bundle = OSSymbol::withCStringNoCopy(bundle_identifier);
-					if (bundle) {
-						if (!startMatching_symbol(gIOCatalogue, bundle))
-							SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) failed");
-						else
-							DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) successful");
-						OSSafeReleaseNULL(bundle);
+			
+			if (!matchingTimer) {
+				if (!workLoop)
+					workLoop = IOWorkLoop::workLoop();
+				
+				if (workLoop) {
+					matchingTimer = IOTimerEventSource::timerEventSource(ADDPR(selfInstance),
+					[](OSObject *owner, IOTimerEventSource *) {
+						callbackBRCMFX->startMatching();
+					});
+					
+					if (matchingTimer) {
+						workLoop->addEventSource(matchingTimer);
 					}
+					else
+						SYSLOG("BRCMFX", "timerEventSource failed");
 				}
+				else
+					SYSLOG("BRCMFX", "IOService instance does not have workLoop");
 			}
-			else if (startMatching_dictionary)
-			{
-				OSDictionary* dict = OSDictionary::withCapacity(1);
-				if (dict) {
-					const OSSymbol* pci = OSSymbol::withCStringNoCopy("IOPCIDevice");
-					if (pci) {
-						dict->setObject("IOProviderClass", pci);
-						OSSafeReleaseNULL(pci);
-						if (!startMatching_dictionary(gIOCatalogue, dict))
-							SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) failed");
-						else
-							DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) successful");
-					}
-					OSSafeReleaseNULL(dict);
-				}
-			}
+			if (matchingTimer)
+				matchingTimer->setTimeoutMS(1000);
 		}
 	}
 
 	// Ignore all the errors for other processors
 	patcher.clearError();
+}
+
+void BRCMFX::startMatching()
+{
+	DBGLOG("BRCMFX", "startMatching is called");
+	
+#ifdef DEBUG
+	if (findDrivers) {
+		for (int i=0; i < kextListSize; i++)
+		{
+			int brcmfx_driver = checkBrcmfxDriverValue(i, true);
+			if (i != brcmfx_driver)
+				continue;
+			auto bundle = OSSymbol::withCStringNoCopy(idList[i]);
+			if (!bundle)
+				continue;
+			OSDictionary * dict = OSDictionary::withCapacity(1);
+			if (dict) {
+				dict->setObject(kCFBundleIdentifierKey, bundle);
+				SInt32 generation = 0;
+				OSOrderedSet *set = findDrivers(gIOCatalogue, dict, &generation);
+				if (set) {
+					if (set->getCount() > 0)
+						SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() returned non-empty ordered set for bundle %s", idList[i]);
+					else
+						SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() returned empty ordered set for bundle %s", idList[i]);
+				}
+				else {
+					SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() failed for bundle %s", idList[i]);
+				}
+				OSSafeReleaseNULL(dict);
+				OSSafeReleaseNULL(set);
+			}
+		}
+	}
+#endif
+	
+	if (startMatching_symbol)
+	{
+		for (int i=0; i < kextListSize; i++)
+		{
+			int brcmfx_driver = checkBrcmfxDriverValue(i, true);
+			if (i != brcmfx_driver)
+				continue;
+			const char *bundle_identifier = idList[i];
+			
+			auto bundle = OSSymbol::withCStringNoCopy(bundle_identifier);
+			if (bundle) {
+				if (!startMatching_symbol(gIOCatalogue, bundle))
+					SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) failed for bundle %s", bundle_identifier);
+				else
+					DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSSymbol const*) successful for bundle %s", bundle_identifier);
+				OSSafeReleaseNULL(bundle);
+			}
+		}
+	}
+	
+	if (startMatching_dictionary)
+	{
+		OSDictionary* dict = OSDictionary::withCapacity(1);
+		if (dict) {
+			const OSSymbol* pci = OSSymbol::withCStringNoCopy("IOPCIDevice");
+			if (pci) {
+				dict->setObject("IOProviderClass", pci);
+				OSSafeReleaseNULL(pci);
+				if (!startMatching_dictionary(gIOCatalogue, dict))
+					SYSLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) failed");
+				else
+					DBGLOG("BRCMFX", "gIOCatalogue->startMatching(OSDictionary *) successful");
+			}
+			OSSafeReleaseNULL(dict);
+		}
+	}
 }

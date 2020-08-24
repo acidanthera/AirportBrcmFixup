@@ -13,6 +13,8 @@
 
 #include "kern_misc.hpp"
 
+#include <IOKit/IOWorkLoop.h>
+
 
 class BRCMFX {
 public:
@@ -36,12 +38,19 @@ private:
 	 *  @param size    kinfo memory size
 	 */
 	void processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size);
-		
+	
+	/**
+	 * Execute postponed matching
+	 */
+	void startMatching();
+
+	
 	/**
 	 *  Symbol types
 	 */
 	using IOCatalogue_startMatching_symbol = bool (*)(void *that, OSSymbol const* bundle_identifier);
 	using IOCatalogue_startMatching_dictionary = bool (*)(void *that, OSDictionary *matching);
+	using IOCatalogue_findDrivers = OSOrderedSet* (*)(void *that, OSDictionary *matching, SInt32 * generationCount);
 	using IOCatalogue_removeDrivers = bool (*)(void *that, OSDictionary *matching, bool doNubMatching);
 
 	/**
@@ -63,7 +72,7 @@ private:
 	
 	template <size_t index>
 	static int32_t 			siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
-
+	
 	/**
 	 *  Trampolines for original method invocations
 	 */
@@ -75,10 +84,13 @@ private:
 	// access to IOCatalogue methods
 	IOCatalogue_startMatching_symbol startMatching_symbol {};
 	IOCatalogue_startMatching_dictionary startMatching_dictionary {};
+	IOCatalogue_findDrivers findDrivers {};
 	IOCatalogue_removeDrivers removeDrivers {};
 	
 	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};
+	IOWorkLoop *workLoop {};
+	IOTimerEventSource *matchingTimer {};
 };
 
 #endif /* kern_brcmfx_hpp */
