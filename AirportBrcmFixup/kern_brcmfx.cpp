@@ -208,6 +208,8 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 
 	bool result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
 	DBGLOG("BRCMFX", "start is finished with result %d", result);
+	if (result)
+		callbackBRCMFX->atLeastOneServiceStarted = true;
 	return result;
 }
 
@@ -548,5 +550,12 @@ void BRCMFX::startMatching()
 			}
 			OSSafeReleaseNULL(dict);
 		}
+	}
+	
+	IOSleep(200);
+	if (!atLeastOneServiceStarted && --matchingLeftAttemptCounter >= 0 && matchingTimer)
+	{
+		DBGLOG("BRCMFX", "startMatching did not detect any started services, schedule one more attempt");
+		matchingTimer->setTimeoutMS(1000);
 	}
 }

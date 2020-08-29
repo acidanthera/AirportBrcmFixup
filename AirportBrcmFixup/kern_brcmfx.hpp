@@ -9,6 +9,7 @@
 #define kern_brcmfx_hpp
 
 #include <Headers/kern_patcher.hpp>
+#include <Headers/kern_atomic.hpp>
 #include <Library/LegacyIOService.h>
 
 #include "kern_misc.hpp"
@@ -89,7 +90,9 @@ private:
 	
 	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};
+	_Atomic(bool) atLeastOneServiceStarted = false;
 	IOWorkLoop *workLoop {};
+	int matchingLeftAttemptCounter {9};
 	IOTimerEventSource *matchingTimer {};
 };
 
