@@ -11,7 +11,7 @@
 #include "kern_fakebrcm.hpp"
 #include "kern_misc.hpp"
 #include <IOKit/pci/IOPCIDevice.h>
-
+#include <IOKit/IOCatalogue.h>
 
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
@@ -31,7 +31,7 @@ bool PCIHookManager::isServiceSupported(IORegistryEntry* service)
 	
 	for (int i=0; i<kextListSize; i++)
 	{
-		if (strcmp(serviceNameList[i], service->getName()) == 0)
+		if (strcmp(serviceNameList[i], safeString(service->getName())) == 0)
 			return true;
 	}
 	return false;
@@ -64,7 +64,7 @@ UInt16 PCIHookManager::configRead16(IORegistryEntry *service, UInt32 space, UInt
 	}
 	
 	if (newResult != result)
-		DBGLOG("BRCMFX", "PCIHookManager::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", service->getName(), result, newResult);
+		DBGLOG("BRCMFX", "PCIHookManager::configRead16: name = %s, source value = 0x%04x replaced with value = 0x%04x", safeString(service->getName()), result, newResult);
 	
 	return newResult;
 }
@@ -87,7 +87,7 @@ UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt
 	}
 	
 	if (newResult != result)
-		DBGLOG("BRCMFX", "PCIHookManager::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", service->getName(), result, newResult);
+		DBGLOG("BRCMFX", "PCIHookManager::configRead32: name = %s, source value = 0x%08x replaced with value = 0x%08x", safeString(service->getName()), result, newResult);
 	
 	return newResult;
 }
@@ -96,6 +96,8 @@ UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt
 
 void PCIHookManager::hookProvider(IOService *provider)
 {
+	awaitPublishing(provider);
+	
 	auto pciDevice = OSDynamicCast(IOPCIDevice, provider);
 	if (!pciDevice) {
 		DBGLOG("BRCMFX", "Provider is not IOPCIDevice");
@@ -170,6 +172,32 @@ void PCIHookManager::hookProvider(IOService *provider)
 
 //==============================================================================
 
+bool PCIHookManager::awaitPublishing(IORegistryEntry *obj)
+{
+	size_t counter = 0;
+	while (counter < 256) {
+		if (obj->inPlane(gIOServicePlane)) {
+			DBGLOG("BRCMFX", "pci device %s is in service plane %lu", safeString(obj->getName()), counter);
+			return true;
+		}
+		DBGLOG("BRCMFX", "pci device %s is not in service plane %lu, polling", safeString(obj->getName()), counter);
+		
+		if (obj->getProperty("IOPCIConfigured")) {
+			DBGLOG("dev", "pci bridge %s is configured %lu", safeString(obj->getName()), counter);
+			break;
+		}
+		DBGLOG("BRCMFX", "pci bridge %s is not configured %lu, polling", safeString(obj->getName()), counter);
+		++counter;
+		IOSleep(20);
+	}
+
+	SYSLOG("BRCMFX", "found dead pci device %s", safeString(obj->getName()));
+	return false;
+}
+
+
+//==============================================================================
+
 bool FakeBrcm::init(OSDictionary *propTable)
 {
 	if (ADDPR(brcmfx_config).disabled)
@@ -223,7 +251,7 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 		return ret;
 	}
 	
-	DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", provider->getName());
+	DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", safeString(provider->getName()));
 	
 	for (int i = 0; i < kextListSize; i++)
 	{
@@ -231,20 +259,29 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 		if (i != brcmfx_driver)
 			continue;
 
-		const OSMetaClass * meta_class = OSMetaClass::getMetaClassWithName(OSSymbol::withCStringNoCopy(serviceNameList[i]));
-		if (meta_class != nullptr)
-		{
-			DBGLOG("BRCMFX", "FakeBrcm::probe(): meta class for %s exists!", serviceNameList[i]);
-
-			IOService *service = OSDynamicCast(IOService, meta_class->alloc());
-			if (service != nullptr)
-			{
-				service->retain();
-				DBGLOG("BRCMFX", "FakeBrcm: retain counter for driver %s is %d", serviceNameList[i], service->getRetainCount());
-				service_found = true;
+		auto bundle = OSSymbol::withCStringNoCopy(idList[i]);
+		if (bundle) {
+			OSDictionary * dict = OSDictionary::withCapacity(1);
+			if (dict) {
+				dict->setObject(kCFBundleIdentifierKey, bundle);
+				SInt32 generation = 0;
+				OSOrderedSet *set = gIOCatalogue->findDrivers(dict, &generation);
+				if (set) {
+					if (set->getCount() > 0)
+					{
+						DBGLOG("BRCMFX", "FakeBrcm::probe(): gIOCatalogue->findDrivers() returned non-empty ordered set for bundle %s", idList[i]);
+						service_found = true;
+						
+					}
+					else
+						DBGLOG("BRCMFX", "FakeBrcm::probe(): gIOCatalogue->findDrivers() returned empty ordered set for bundle %s", idList[i]);
+				}
+				else {
+					SYSLOG("BRCMFX", "FakeBrcm::probe(): gIOCatalogue->findDrivers() failed for bundle %s", idList[i]);
+				}
+				OSSafeReleaseNULL(dict);
+				OSSafeReleaseNULL(set);
 			}
-			else
-				SYSLOG("BRCMFX", "FakeBrcm: instance of driver %s couldn't be created", serviceNameList[i]);
 		}
 	}
 	

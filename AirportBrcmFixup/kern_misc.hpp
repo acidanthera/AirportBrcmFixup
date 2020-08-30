@@ -10,6 +10,10 @@
 
 #include <Headers/kern_util.hpp>
 
+#define kCFBundleIdentifierKey					"CFBundleIdentifier"
+#define kCFBundleIdentifierKernelKey			"CFBundleIdentifierKernel"
+#define KIOClass                  				"IOClass"
+
 static const size_t kextListSize {4};
 
 enum AirportServices {

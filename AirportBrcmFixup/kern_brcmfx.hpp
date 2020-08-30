@@ -51,7 +51,6 @@ private:
 	 */
 	using IOCatalogue_startMatching_symbol = bool (*)(void *that, OSSymbol const* bundle_identifier);
 	using IOCatalogue_startMatching_dictionary = bool (*)(void *that, OSDictionary *matching);
-	using IOCatalogue_findDrivers = OSOrderedSet* (*)(void *that, OSDictionary *matching, SInt32 * generationCount);
 	using IOCatalogue_removeDrivers = bool (*)(void *that, OSDictionary *matching, bool doNubMatching);
 
 	/**
@@ -85,7 +84,6 @@ private:
 	// access to IOCatalogue methods
 	IOCatalogue_startMatching_symbol startMatching_symbol {};
 	IOCatalogue_startMatching_dictionary startMatching_dictionary {};
-	IOCatalogue_findDrivers findDrivers {};
 	IOCatalogue_removeDrivers removeDrivers {};
 	
 	char provider_country_code[5] {""};

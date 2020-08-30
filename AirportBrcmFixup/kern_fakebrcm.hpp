@@ -25,6 +25,7 @@ class EXPORT PCIHookManager
 
 public:
 	static void hookProvider(IOService* provider);
+	static bool awaitPublishing(IORegistryEntry *obj);
 };
 
 class EXPORT FakeBrcm : public IOService

@@ -15,10 +15,6 @@
 #include <IOKit/IOCatalogue.h>
 #include <IOKit/IOTimerEventSource.h>
 
-#define kCFBundleIdentifierKey                  "CFBundleIdentifier"
-#define kCFBundleIdentifierKernelKey            "CFBundleIdentifierKernel"
-#define KIOClass                  				"IOClass"
-
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
 
@@ -36,6 +32,7 @@ static bool kext_handled[kextListSize] {};
 
 bool BRCMFX::init()
 {
+	DBGLOG("BRCMFX", "init method is called");
 	callbackBRCMFX = this;
 	
 	lilu.onPatcherLoadForce(
@@ -173,9 +170,9 @@ int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
-	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", service->getName(), provider->getName());
+	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
 	
-	int index = find_service_index(service->getName());
+	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
 	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
 		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
@@ -187,7 +184,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
-		DBGLOG("BRCMFX", "start: disable service %s", service->getName());
+		DBGLOG("BRCMFX", "start: disable service %s", safeString(service->getName()));
 		return nullptr;
 	}
 	
@@ -198,7 +195,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		DBGLOG("BRCMFX", "%s in ioreg is set to %s", Configuration::bootargBrcmCountry, callbackBRCMFX->provider_country_code);
 	}
 	
-	auto name = provider->getName();
+	auto name = safeString(provider->getName());
 	
 	// There could be only one ARPT
 	if (!name || strcmp(name, "ARPT") != 0)
@@ -217,8 +214,8 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 
 IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score)
 {
-	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", service->getName(), provider->getName());
-	int index = find_service_index(service->getName());
+	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
+	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
 	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
 		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
@@ -230,7 +227,7 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver)
 	{
-		DBGLOG("BRCMFX", "probe: disable service %s", service->getName());
+		DBGLOG("BRCMFX", "probe: disable service %s", safeString(service->getName()));
 		return nullptr;
 	}
 	
@@ -279,7 +276,7 @@ IOService* LIBKERN_RETURNS_NOT_RETAINED findService(const IORegistryPlane* plane
 		IORegistryEntry *res {nullptr};
 		while ((res = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != nullptr)
 		{
-			const char *resname = res->getName();
+			auto resname = safeString(res->getName());
 			if (resname && !strncmp(service_name, resname, len))
 			{
 				service = OSDynamicCast(IOService, res);
@@ -298,19 +295,13 @@ IOService* LIBKERN_RETURNS_NOT_RETAINED findService(const IORegistryPlane* plane
 
 void BRCMFX::processKernel(KernelPatcher &patcher)
 {
+	DBGLOG("BRCMFX", "processKernel method is called");
 	if (!startMatching_symbol && !startMatching_dictionary)
 	{
 		startMatching_symbol = reinterpret_cast<IOCatalogue_startMatching_symbol>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEPK8OSSymbol"));
 		startMatching_dictionary = reinterpret_cast<IOCatalogue_startMatching_dictionary>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13startMatchingEP12OSDictionary"));
 		if (!startMatching_symbol && !startMatching_dictionary)
 			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::startMatching method, error = %d", patcher.getError());
-	}
-	
-	if (!findDrivers)
-	{
-		findDrivers = reinterpret_cast<IOCatalogue_findDrivers>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue11findDriversEP12OSDictionaryPi"));
-		if (!findDrivers)
-			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::findDrivers method, error = %d", patcher.getError());
 	}
 	
 	if (!removeDrivers)
@@ -418,40 +409,6 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 			
 			ADDPR(brcmfx_config).disabled = true;
 			
-			IOService *service = findService(gIOServicePlane, "FakeBrcm");
-			if (service && service->getProvider())
-			{
-				auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
-				auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
-				bool success = false;
-
-				IOService *provider = service->getProvider();
-				if (provider)
-				{
-					provider->retain();
-					if (service->terminate())
-						success = true;
-					provider->release();
-					DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
-				}
-				else
-					success = true;
-				
-				if (success && bundle && ioclass && removeDrivers)
-				{
-					OSDictionary * dict = OSDictionary::withCapacity(2);
-					if (dict) {
-						dict->setObject(kCFBundleIdentifierKey, bundle);
-						dict->setObject(KIOClass, ioclass);
-						if (!removeDrivers(gIOCatalogue, dict, false))
-							SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
-						else
-							DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
-						OSSafeReleaseNULL(dict);
-					}
-				}
-			}
-			
 			if (!matchingTimer) {
 				if (!workLoop)
 					workLoop = IOWorkLoop::workLoop();
@@ -484,33 +441,65 @@ void BRCMFX::startMatching()
 {
 	DBGLOG("BRCMFX", "startMatching is called");
 	
-#ifdef DEBUG
-	if (findDrivers) {
-		for (int i=0; i < kextListSize; i++)
+	IOService *service = findService(gIOServicePlane, "FakeBrcm");
+	if (service && service->getProvider())
+	{
+		auto bundle  = OSDynamicCast(OSString, service->getProperty(kCFBundleIdentifierKey));
+		auto ioclass = OSDynamicCast(OSString, service->getProperty(KIOClass));
+		bool success = false;
+
+		IOService *provider = service->getProvider();
+		if (provider)
 		{
-			int brcmfx_driver = checkBrcmfxDriverValue(i, true);
-			if (i != brcmfx_driver)
-				continue;
-			auto bundle = OSSymbol::withCStringNoCopy(idList[i]);
-			if (!bundle)
-				continue;
-			OSDictionary * dict = OSDictionary::withCapacity(1);
+			provider->retain();
+			if (service->terminate())
+				success = true;
+			provider->release();
+			DBGLOG("BRCMFX", "terminating FakeBrcm with status %d", success);
+		}
+		else
+			success = true;
+		
+		if (success && bundle && ioclass && removeDrivers)
+		{
+			OSDictionary * dict = OSDictionary::withCapacity(2);
 			if (dict) {
 				dict->setObject(kCFBundleIdentifierKey, bundle);
-				SInt32 generation = 0;
-				OSOrderedSet *set = findDrivers(gIOCatalogue, dict, &generation);
-				if (set) {
-					if (set->getCount() > 0)
-						SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() returned non-empty ordered set for bundle %s", idList[i]);
-					else
-						SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() returned empty ordered set for bundle %s", idList[i]);
-				}
-				else {
-					SYSLOG("BRCMFX", "gIOCatalogue->findDrivers() failed for bundle %s", idList[i]);
-				}
+				dict->setObject(KIOClass, ioclass);
+				if (!removeDrivers(gIOCatalogue, dict, false))
+					SYSLOG("BRCMFX", "gIOCatalogue->removeDrivers failed");
+				else
+					DBGLOG("BRCMFX", "gIOCatalogue->removeDrivers successful");
 				OSSafeReleaseNULL(dict);
-				OSSafeReleaseNULL(set);
 			}
+		}
+	}
+	
+#ifdef DEBUG
+	for (int i=0; i < kextListSize; i++)
+	{
+		int brcmfx_driver = checkBrcmfxDriverValue(i, true);
+		if (i != brcmfx_driver)
+			continue;
+		auto bundle = OSSymbol::withCStringNoCopy(idList[i]);
+		if (!bundle)
+			continue;
+		OSDictionary * dict = OSDictionary::withCapacity(1);
+		if (dict) {
+			dict->setObject(kCFBundleIdentifierKey, bundle);
+			SInt32 generation = 0;
+			OSOrderedSet *set = gIOCatalogue->findDrivers(dict, &generation);
+			if (set) {
+				if (set->getCount() > 0)
+					DBGLOG("BRCMFX", "gIOCatalogue->findDrivers() returned non-empty ordered set for bundle %s", idList[i]);
+				else
+					DBGLOG("BRCMFX", "gIOCatalogue->findDrivers() returned empty ordered set for bundle %s", idList[i]);
+			}
+			else {
+				DBGLOG("BRCMFX", "gIOCatalogue->findDrivers() failed for bundle %s", idList[i]);
+			}
+			OSSafeReleaseNULL(dict);
+			OSSafeReleaseNULL(set);
 		}
 	}
 #endif
