@@ -121,3 +121,6 @@ since class AirPortBrcm4360 is unsupported.
 - boot-arg and property `brcmfx-aspm` supports special value `255` in order to skip logic disabling APSM for 0x14e4:0x43a3 (DW1820A). 
 It can be used if you have masked pin 53 (CLKREQ#) and APSM L0|L1 is working.
 - Improve service matching (the old implementation could cause hangs on boot)
+
+#### v2.1.0
+- Add pci14e4,4331 into AirPortBrcmNIC_Injector.kext 
