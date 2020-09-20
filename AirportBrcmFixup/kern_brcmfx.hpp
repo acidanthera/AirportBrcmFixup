@@ -9,8 +9,8 @@
 #define kern_brcmfx_hpp
 
 #include <Headers/kern_patcher.hpp>
-#include <Headers/kern_atomic.hpp>
-#include <Library/LegacyIOService.h>
+#include <stdatomic.h>
+#include <IOKit/IOService.h>
 
 #include "kern_misc.hpp"
 

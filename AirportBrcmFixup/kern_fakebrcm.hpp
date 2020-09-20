@@ -8,7 +8,7 @@
 #ifndef FakeBrcm_h
 #define FakeBrcm_h
 
-#include <Library/LegacyIOService.h>
+#include <IOKit/IOService.h>
 #include <Headers/kern_iokit.hpp>
 #include <Headers/kern_util.hpp>
 #include <Headers/kern_config.hpp>

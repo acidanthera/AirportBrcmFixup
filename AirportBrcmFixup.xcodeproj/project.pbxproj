@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1C748C2D1C21952C0024EED2 /* kern_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1C748C2C1C21952C0024EED2 /* kern_start.cpp */; };
-		CE405EC91E49DD9700AA0B3D /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE405EC71E49DD7100AA0B3D /* libkmod.a */; };
 		CE405ED91E4A080700AA0B3D /* plugin_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE405ED81E4A080700AA0B3D /* plugin_start.cpp */; };
+		CE8DA0A42517CE8B008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA0A32517CE8B008C44E8 /* libkmod.a */; };
 		F641B3981F33857B009B3996 /* kern_misc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F641B3971F33857B009B3996 /* kern_misc.hpp */; };
 		F660AAED24BA176D00BF749E /* AirPortBrcm4360_Injector.kext in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F660AAEE24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -51,12 +51,11 @@
 		CE405EC01E49DD7100AA0B3D /* kern_policy.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_policy.hpp; sourceTree = "<group>"; };
 		CE405EC31E49DD7100AA0B3D /* kern_user.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_user.hpp; sourceTree = "<group>"; };
 		CE405EC41E49DD7100AA0B3D /* kern_util.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_util.hpp; sourceTree = "<group>"; };
-		CE405EC61E49DD7100AA0B3D /* LegacyIOService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LegacyIOService.h; sourceTree = "<group>"; };
-		CE405EC71E49DD7100AA0B3D /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libkmod.a; sourceTree = "<group>"; };
 		CE405ECF1E49EC9100AA0B3D /* kern_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_config.hpp; sourceTree = "<group>"; };
 		CE405ED21E49F9FC00AA0B3D /* kern_api.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_api.hpp; sourceTree = "<group>"; };
 		CE405ED81E4A080700AA0B3D /* plugin_start.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = plugin_start.cpp; sourceTree = "<group>"; };
 		CE405EDA1E4A080F00AA0B3D /* plugin_start.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = plugin_start.hpp; sourceTree = "<group>"; };
+		CE8DA0A32517CE8B008C44E8 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = ../Lilu/MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
 		F641B3971F33857B009B3996 /* kern_misc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = kern_misc.hpp; sourceTree = "<group>"; };
 		F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcm4360_Injector.kext; path = Resources/AirPortBrcm4360_Injector.kext; sourceTree = "<group>"; };
 		F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = AirPortBrcmNIC_Injector.kext; path = Resources/AirPortBrcmNIC_Injector.kext; sourceTree = "<group>"; };
@@ -72,7 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE405EC91E49DD9700AA0B3D /* libkmod.a in Frameworks */,
+				CE8DA0A42517CE8B008C44E8 /* libkmod.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,8 +145,6 @@
 		CE405EC51E49DD7100AA0B3D /* Library */ = {
 			isa = PBXGroup;
 			children = (
-				CE405EC61E49DD7100AA0B3D /* LegacyIOService.h */,
-				CE405EC71E49DD7100AA0B3D /* libkmod.a */,
 				CE405ED81E4A080700AA0B3D /* plugin_start.cpp */,
 			);
 			name = Library;
@@ -166,6 +163,7 @@
 		F61DF88C24BA12AF007F9208 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				CE8DA0A32517CE8B008C44E8 /* libkmod.a */,
 				F660AAEB24BA176D00BF749E /* AirPortBrcm4360_Injector.kext */,
 				F660AAEC24BA176D00BF749E /* AirPortBrcmNIC_Injector.kext */,
 			);
@@ -220,6 +218,7 @@
 				TargetAttributes = {
 					1C748C261C21952C0024EED2 = {
 						CreatedOnToolsVersion = 7.2;
+						ProvisioningStyle = Manual;
 					};
 				};
 			};
@@ -327,6 +326,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				KERNEL_EXTENSION_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -372,6 +373,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				KERNEL_EXTENSION_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -380,6 +383,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "$(MODULE_VERSION)";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -395,7 +400,7 @@
 				INFOPLIST_FILE = AirportBrcmFixup/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/Lilu.kext/Contents/Resources/Library",
+					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				MODULE_NAME = as.lvs1974.AirportBrcmFixup;
@@ -428,6 +433,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(MODULE_VERSION)";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -442,7 +449,7 @@
 				INFOPLIST_FILE = AirportBrcmFixup/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/Lilu.kext/Contents/Resources/Library",
+					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
 				);
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
