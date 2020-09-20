@@ -125,3 +125,4 @@ It can be used if you have masked pin 53 (CLKREQ#) and APSM L0|L1 is working.
 #### v2.1.0
 - Add pci14e4,4331 into AirPortBrcmNIC_Injector.kext 
 - Added MacKernelSDK with Xcode 12 compatibility
+- Fixed macOS 10.8 and 10.9 compatibility (no ASPM support)

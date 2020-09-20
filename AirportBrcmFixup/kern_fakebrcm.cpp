@@ -351,4 +351,11 @@ void FakeBrcm::free()
 }
 
 
+IOReturn WEAKFUNC PRIVATE IOPCIDevice::setASPMState(IOService * client, IOOptionBits state) {
+	// Provide weak function on 10.9 and 10.8 to let the kext load on these systems
+	// without ASPM support.
+	if (getKernelVersion() >= KernelVersion::Yosemite)
+		PANIC("BRCMFX", "Called dummy IOPCIDevice::setASPMState, check your compiler");
+	return kIOReturnUnsupported;
+}
 
