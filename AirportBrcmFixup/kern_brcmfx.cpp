@@ -360,8 +360,10 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					SYSLOG("BRCMFX", "failed to resolve __ZN11IOPCIDevice12setASPMStateEP9IOServicej %d", patcher.getError());
 					patcher.clearError();
 				}
+				break;
 			}
-			else while (true)
+			
+			while (true)
 			{
 				DBGLOG("BRCMFX", "found %s", idList[i]);
 
