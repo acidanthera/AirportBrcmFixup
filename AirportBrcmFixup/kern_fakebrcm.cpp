@@ -130,7 +130,7 @@ void PCIHookManager::hookProvider(IOService *provider)
 					DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", brcmfx_aspm);
 					provider->setProperty("pci-aspm-default", brcmfx_aspm, 32);
 				}
-				
+				// FIXME: This one is missing on 10.8 and 10.9 and causes linkage failure.
 				auto result = pciDevice->setASPMState(provider, brcmfx_aspm);
 				if (result != KERN_SUCCESS)
 					SYSLOG("BRCMFX", "setASPMState failed with result %x", result);
@@ -349,13 +349,3 @@ void FakeBrcm::free()
 	DBGLOG("BRCMFX", "FakeBrcm::free()");
 	super::free();
 }
-
-
-IOReturn WEAKFUNC PRIVATE IOPCIDevice::setASPMState(IOService * client, IOOptionBits state) {
-	// Provide weak function on 10.9 and 10.8 to let the kext load on these systems
-	// without ASPM support.
-	if (getKernelVersion() >= KernelVersion::Yosemite)
-		PANIC("BRCMFX", "Called dummy IOPCIDevice::setASPMState, check your compiler");
-	return kIOReturnUnsupported;
-}
-

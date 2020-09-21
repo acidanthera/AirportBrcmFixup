@@ -6,7 +6,7 @@ AirportBrcmFixup
 An open source kernel extension providing a set of patches required for non-native Airport Broadcom Wi-Fi cards.
 
 #### Notes
-This repository should be compiled with [Lilu](https://github.com/vit9696/Lilu) ***v1.2.4*** or greater, otherwise the compilation will fail!
+This repository should be compiled with [Lilu](https://github.com/vit9696/Lilu) ***v1.2.4*** or greater, otherwise the compilation will fail! Currently requires macOS 10.10 or newer.
 
 Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFixup! And they should be also used together!***
 
