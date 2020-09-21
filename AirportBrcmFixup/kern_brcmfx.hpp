@@ -52,6 +52,7 @@ private:
 	using IOCatalogue_startMatching_symbol = bool (*)(void *that, OSSymbol const* bundle_identifier);
 	using IOCatalogue_startMatching_dictionary = bool (*)(void *that, OSDictionary *matching);
 	using IOCatalogue_removeDrivers = bool (*)(void *that, OSDictionary *matching, bool doNubMatching);
+	using IOPCIDevice_setASPMState = IOReturn (*)(void *pciDevice, IOService *service, IOOptionBits state);
 
 	/**
 	 *  Hooked methods / callbacks
@@ -76,15 +77,16 @@ private:
 	/**
 	 *  Trampolines for original method invocations
 	 */
-	mach_vm_address_t orgStart[kextListSize] {};
-	mach_vm_address_t orgProbe[kextListSize] {};
-	mach_vm_address_t orgWlcSetCountryCodeRev[kextListSize] {};
-	mach_vm_address_t orgSiPmuFvcoPllreg[kextListSize] {};
+	mach_vm_address_t orgStart[MaxServices] {};
+	mach_vm_address_t orgProbe[MaxServices] {};
+	mach_vm_address_t orgWlcSetCountryCodeRev[MaxServices] {};
+	mach_vm_address_t orgSiPmuFvcoPllreg[MaxServices] {};
 	
 	// access to IOCatalogue methods
 	IOCatalogue_startMatching_symbol startMatching_symbol {};
 	IOCatalogue_startMatching_dictionary startMatching_dictionary {};
 	IOCatalogue_removeDrivers removeDrivers {};
+	IOPCIDevice_setASPMState  setASPMState {};
 	
 	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};

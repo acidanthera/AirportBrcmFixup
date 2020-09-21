@@ -14,37 +14,36 @@
 #define kCFBundleIdentifierKernelKey			"CFBundleIdentifierKernel"
 #define KIOClass                  				"IOClass"
 
-static const size_t kextListSize {4};
-
 enum AirportServices {
 	AirPort_BrcmNIC_MFG = 0,
 	AirPort_Brcm4360,
 	AirPort_BrcmNIC,
-	AirPort_Brcm4331
+	AirPort_Brcm4331,
+	MaxServices
 };
 
-static const char *serviceNameList[kextListSize] {
+static const char *serviceNameList[MaxServices] {
 	"AirPort_BrcmNIC_MFG",
 	"AirPort_Brcm4360",
 	"AirPort_BrcmNIC",
 	"AirPort_Brcm4331"
 };
 
-static const char *idList[kextListSize] {
+static const char *idList[MaxServices] {
 	"com.apple.driver.AirPort.BrcmNIC-MFG",
 	"com.apple.driver.AirPort.Brcm4360",
 	"com.apple.driver.AirPort.BrcmNIC",
 	"com.apple.driver.AirPort.Brcm4331"
 };
 
-static const char *binList[kextListSize] {
+static const char *binList[MaxServices] {
 	"/System/Library/Extensions/AirPortBrcmNIC-MFG.kext/Contents/MacOS/AirPortBrcmNIC-MFG",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4360.kext/Contents/MacOS/AirPortBrcm4360",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcmNIC.kext/Contents/MacOS/AirPortBrcmNIC",
 	"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4331.kext/Contents/MacOS/AirPortBrcm4331"
 };
 
-static const char *symbolList[kextListSize][9] {
+static const char *symbolList[MaxServices][9] {
 	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",     "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
 	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",   "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",   nullptr,
 	 "__ZN19AirPort_BrcmNIC_MFG18wowCapablePlatformEv", "_wlc_wowl_enable" },
@@ -68,7 +67,7 @@ static const char *symbolList[kextListSize][9] {
 
 inline int find_service_index(const char* service_name)
 {
-	for (int i=0; i<kextListSize; ++i)
+	for (int i=0; i<MaxServices; ++i)
 		if (!strcmp(serviceNameList[i], service_name))
 			return i;
 	return -1;

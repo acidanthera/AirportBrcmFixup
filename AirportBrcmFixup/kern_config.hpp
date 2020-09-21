@@ -23,8 +23,8 @@ public:
 	static constexpr const char *bootargBrcmEnableWowl {"brcmfx-wowl"};     // enable WOWL
 	static constexpr const char *bootargBrcmDriver {"brcmfx-driver"};
 	static constexpr const char *bootargBrcmAspm {"brcmfx-aspm"};
-	
-	
+
+
 	/**
 	 *  Retrieve boot arguments
 	 *
@@ -35,10 +35,13 @@ public:
 	char country_code[4] {"US"};
 	bool country_code_overrided {false};
 	
-	bool disabled           {false};
-	bool enable_wowl        {false};
-	
-	int32_t brcmfx_driver   {-1};
+	bool disabled            {false};
+	bool enable_wowl         {false};
+
+	int32_t brcmfx_driver    {-1};
+
+	IOOptionBits brcmfx_aspm {0};
+	bool override_aspm		 {false};
 
 	Configuration() = default;
 };

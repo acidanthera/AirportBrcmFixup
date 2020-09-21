@@ -9,9 +9,11 @@
 
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
-#include "kern_misc.hpp"
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOCatalogue.h>
+
+#include "kern_misc.hpp"
+
 
 OSDefineMetaClassAndStructors(FakeBrcm, IOService);
 
@@ -29,7 +31,7 @@ bool PCIHookManager::isServiceSupported(IORegistryEntry* service)
 	if (service == service_provider)
 		return true;
 	
-	for (int i=0; i<kextListSize; i++)
+	for (int i=0; i<MaxServices; i++)
 	{
 		if (strcmp(serviceNameList[i], safeString(service->getName())) == 0)
 			return true;
@@ -106,36 +108,35 @@ void PCIHookManager::hookProvider(IOService *provider)
 	
 	if (service_provider == nullptr)
 	{
-		bool aspm_value_forced = false;
-		IOOptionBits brcmfx_aspm = 0;
-		if ((aspm_value_forced = PE_parse_boot_argn(Configuration::bootargBrcmAspm, &brcmfx_aspm, sizeof(brcmfx_aspm)))) {
-			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmAspm, brcmfx_aspm);
-		} else if ((aspm_value_forced = WIOKit::getOSDataValue(provider, Configuration::bootargBrcmAspm, brcmfx_aspm))) {
-			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmAspm, brcmfx_aspm);
+		if (PE_parse_boot_argn(Configuration::bootargBrcmAspm, &ADDPR(brcmfx_config).brcmfx_aspm, sizeof(ADDPR(brcmfx_config).brcmfx_aspm))) {
+			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm);
+			ADDPR(brcmfx_config).override_aspm = true;
+		} else if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm)) {
+			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm);
+			ADDPR(brcmfx_config).override_aspm = true;
 		}
 		
-		if (brcmfx_aspm != 0xFF)
+		if (ADDPR(brcmfx_config).brcmfx_aspm != 0xFF)
 		{
 			uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
 			uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
 			uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
 			// change APSM flags if value has been forced or for Broadcom BCM4350 chipset
-			if (aspm_value_forced || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
+			if (ADDPR(brcmfx_config).override_aspm || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
 			{
+				ADDPR(brcmfx_config).override_aspm = true;
 				DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
 					   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
 				auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
-				if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != brcmfx_aspm)
+				if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != ADDPR(brcmfx_config).brcmfx_aspm)
 				{
-					DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", brcmfx_aspm);
-					provider->setProperty("pci-aspm-default", brcmfx_aspm, 32);
+					DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", ADDPR(brcmfx_config).brcmfx_aspm);
+					provider->setProperty("pci-aspm-default", ADDPR(brcmfx_config).brcmfx_aspm, 32);
 				}
-				// FIXME: This one is missing on 10.8 and 10.9 and causes linkage failure.
-				auto result = pciDevice->setASPMState(provider, brcmfx_aspm);
-				if (result != KERN_SUCCESS)
-					SYSLOG("BRCMFX", "setASPMState failed with result %x", result);
 			}
 		}
+		else
+			ADDPR(brcmfx_config).override_aspm = false;
 		
 		UInt32 enable_wowl = 0;
 		if (PE_parse_boot_argn(Configuration::bootargBrcmEnableWowl, &enable_wowl, sizeof(enable_wowl))) {
@@ -253,7 +254,7 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	
 	DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", safeString(provider->getName()));
 	
-	for (int i = 0; i < kextListSize; i++)
+	for (int i = 0; i < MaxServices; i++)
 	{
 		int brcmfx_driver = checkBrcmfxDriverValue(i, true);
 		if (i != brcmfx_driver)

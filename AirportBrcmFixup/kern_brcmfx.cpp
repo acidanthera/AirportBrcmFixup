@@ -17,16 +17,17 @@
 
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
+static const char *kextIOPCIFamilyPath[]   { "/System/Library/Extensions/IOPCIFamily.kext/IOPCIFamily" };
+static const size_t kextListSize {5};
+static bool kext_handled[kextListSize] {};
 
 static KernelPatcher::KextInfo kextList[kextListSize] {
 	{ idList[0], &binList[0], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
 	{ idList[1], &binList[1], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
 	{ idList[2], &binList[2], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ idList[3], &binList[3], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded }
+	{ idList[3], &binList[3], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{"com.apple.iokit.IOPCIFamily", kextIOPCIFamilyPath, arrsize(kextIOPCIFamilyPath), {true}, {}, KernelPatcher::KextInfo::Unloaded}
 };
-
-// progress
-static bool kext_handled[kextListSize] {};
 
 //==============================================================================
 
@@ -182,15 +183,13 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 		
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
-	if (index < 0 || disable_driver)
-	{
+	if (index < 0 || disable_driver) {
 		DBGLOG("BRCMFX", "start: disable service %s", safeString(service->getName()));
 		return nullptr;
 	}
 	
 	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
-	if (data)
-	{
+	if (data) {
 		lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
 		DBGLOG("BRCMFX", "%s in ioreg is set to %s", Configuration::bootargBrcmCountry, callbackBRCMFX->provider_country_code);
 	}
@@ -202,6 +201,11 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		WIOKit::renameDevice(provider, "ARPT");
 	
 	PCIHookManager::hookProvider(provider);
+	if (ADDPR(brcmfx_config).override_aspm && callbackBRCMFX->setASPMState) {
+		IOReturn result = callbackBRCMFX->setASPMState(provider, provider, ADDPR(brcmfx_config).brcmfx_aspm);
+		if (result != KERN_SUCCESS)
+			SYSLOG("BRCMFX", "setASPMState has failed with code 0x%x", result);
+	}
 
 	bool result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
 	DBGLOG("BRCMFX", "start is finished with result %d", result);
@@ -225,13 +229,17 @@ IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score
 	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 	
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
-	if (index < 0 || disable_driver)
-	{
+	if (index < 0 || disable_driver) {
 		DBGLOG("BRCMFX", "probe: disable service %s", safeString(service->getName()));
 		return nullptr;
 	}
 	
 	PCIHookManager::hookProvider(provider);
+	if (ADDPR(brcmfx_config).override_aspm && callbackBRCMFX->setASPMState) {
+		IOReturn result = callbackBRCMFX->setASPMState(provider, provider, ADDPR(brcmfx_config).brcmfx_aspm);
+		if (result != KERN_SUCCESS)
+			SYSLOG("BRCMFX", "setASPMState has failed with code 0x%x", result);
+	}
 
 	IOService *result = FunctionCast(probe, callbackBRCMFX->orgProbe[index])(service, provider, score);
 	DBGLOG("BRCMFX", "probe is finished with result %s", (result != nullptr) ? "success" : "failed");
@@ -319,21 +327,21 @@ void BRCMFX::processKernel(KernelPatcher &patcher)
 
 void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size)
 {
-	static const mach_vm_address_t wlc_set_countrycode_rev[kextListSize] {
+	static const mach_vm_address_t wlc_set_countrycode_rev[MaxServices] {
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<0>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<1>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_set_countrycode_rev<2>),
 		reinterpret_cast<mach_vm_address_t>(wlc_set_countrycode_rev_4331)
 	};
 	
-	static const mach_vm_address_t siPmuFvcoPllreg[kextListSize] {
+	static const mach_vm_address_t siPmuFvcoPllreg[MaxServices] {
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<0>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<1>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<2>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::siPmuFvcoPllreg<3>)
 	};
 	
-	static const mach_vm_address_t checkBoardId[kextListSize] {
+	static const mach_vm_address_t checkBoardId[MaxServices] {
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<0>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<1>),
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<2>),
@@ -345,8 +353,15 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 		if (kextList[i].loadIndex == index && !kext_handled[i])
 		{
 			kext_handled[i] = true;
-
-			while (true)
+			
+			if (i >= MaxServices) {
+				setASPMState = reinterpret_cast<IOPCIDevice_setASPMState>(patcher.solveSymbol(index, "__ZN11IOPCIDevice12setASPMStateEP9IOServicej"));
+				if (!setASPMState && getKernelVersion() >= KernelVersion::Yosemite) {
+					SYSLOG("BRCMFX", "failed to resolve __ZN11IOPCIDevice12setASPMStateEP9IOServicej %d", patcher.getError());
+					patcher.clearError();
+				}
+			}
+			else while (true)
 			{
 				DBGLOG("BRCMFX", "found %s", idList[i]);
 
@@ -476,7 +491,7 @@ void BRCMFX::startMatching()
 	}
 	
 #ifdef DEBUG
-	for (int i=0; i < kextListSize; i++)
+	for (int i=0; i < MaxServices; i++)
 	{
 		int brcmfx_driver = checkBrcmfxDriverValue(i, true);
 		if (i != brcmfx_driver)
@@ -506,7 +521,7 @@ void BRCMFX::startMatching()
 	
 	if (startMatching_symbol)
 	{
-		for (int i=0; i < kextListSize; i++)
+		for (int i=0; i < MaxServices; i++)
 		{
 			int brcmfx_driver = checkBrcmfxDriverValue(i, true);
 			if (i != brcmfx_driver)
