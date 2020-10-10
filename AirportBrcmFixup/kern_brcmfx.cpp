@@ -431,13 +431,15 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					workLoop = IOWorkLoop::workLoop();
 				
 				if (workLoop) {
-					matchingTimer = IOTimerEventSource::timerEventSource(ADDPR(selfInstance),
+					matchingTimer = IOTimerEventSource::timerEventSource(workLoop,
 					[](OSObject *owner, IOTimerEventSource *) {
 						callbackBRCMFX->startMatching();
 					});
 					
 					if (matchingTimer) {
-						workLoop->addEventSource(matchingTimer);
+						IOReturn result = workLoop->addEventSource(matchingTimer);
+						if (result != kIOReturnSuccess)
+							SYSLOG("BRCMFX", "addEventSource failed");
 					}
 					else
 						SYSLOG("BRCMFX", "timerEventSource failed");

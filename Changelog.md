@@ -126,3 +126,6 @@ It can be used if you have masked pin 53 (CLKREQ#) and APSM L0|L1 is working.
 - Add pci14e4,4331, pci14e4,4353  and pci14e4,4357  into AirPortBrcmNIC_Injector.kext  (in 11.0 only AirPortBrcmNIC can support these devices)
 - Added MacKernelSDK with Xcode 12 compatibility
 - Fixed macOS 10.8 compatibility (without ASPM support)
+
+#### v2.1.1
+- Fix an issue with posponed matching (method IOTimerEventSource::timerEventSource could fail)
