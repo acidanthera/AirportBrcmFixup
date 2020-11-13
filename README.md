@@ -31,11 +31,13 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - `-brcmfxbeta` enables loading on unsupported osx
 - `-brcmfxoff` disables kext loading
 - `-brcmfxwowl` enables WOWL (WoWLAN) - it is disabled by default
+- `-brcmfx-alldrv` allows patching for all supported drivers, disregarding current system version (see  `Matching device-id and kext name in different macOS versions`)
 
 #### Specific boot-args and ioreg properties
 - `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
 - `brcmfx-aspm`  overrides value used for pci-aspm-default
 - `brcmfx-wowl` enables/disables WoWLAN patch
+- `brcmfx-alldrv` allows patching for all supported drivers, disregarding current system version (see  `Matching device-id and kext name in different macOS versions`)
 - `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
 
 Possible values for brcmfx-aspm (and pci-aspm-default):

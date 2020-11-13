@@ -9,7 +9,6 @@
 
 #include "kern_config.hpp"
 #include "kern_fakebrcm.hpp"
-#include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOCatalogue.h>
 
 #include "kern_misc.hpp"
@@ -98,57 +97,10 @@ UInt32 PCIHookManager::configRead32(IORegistryEntry *service, UInt32 space, UInt
 
 void PCIHookManager::hookProvider(IOService *provider)
 {
-	awaitPublishing(provider);
-	
-	auto pciDevice = OSDynamicCast(IOPCIDevice, provider);
-	if (!pciDevice) {
-		DBGLOG("BRCMFX", "Provider is not IOPCIDevice");
-		return;
-	}
-	
 	if (service_provider == nullptr)
 	{
-		if (PE_parse_boot_argn(Configuration::bootargBrcmAspm, &ADDPR(brcmfx_config).brcmfx_aspm, sizeof(ADDPR(brcmfx_config).brcmfx_aspm))) {
-			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm);
-			ADDPR(brcmfx_config).override_aspm = true;
-		} else if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm)) {
-			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmAspm, ADDPR(brcmfx_config).brcmfx_aspm);
-			ADDPR(brcmfx_config).override_aspm = true;
-		}
-		
-		if (ADDPR(brcmfx_config).brcmfx_aspm != 0xFF)
-		{
-			uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
-			uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
-			uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
-			// change APSM flags if value has been forced or for Broadcom BCM4350 chipset
-			if (ADDPR(brcmfx_config).override_aspm || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
-			{
-				ADDPR(brcmfx_config).override_aspm = true;
-				DBGLOG("BRCMFX", "PCIHookManager::hookProvider: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
-					   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
-				auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
-				if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != ADDPR(brcmfx_config).brcmfx_aspm)
-				{
-					DBGLOG("BRCMFX", "PCIHookManager::hookProvider: pci-aspm-default needs to be set to %d", ADDPR(brcmfx_config).brcmfx_aspm);
-					provider->setProperty("pci-aspm-default", ADDPR(brcmfx_config).brcmfx_aspm, 32);
-				}
-			}
-		}
-		else
-			ADDPR(brcmfx_config).override_aspm = false;
-		
-		UInt32 enable_wowl = 0;
-		if (PE_parse_boot_argn(Configuration::bootargBrcmEnableWowl, &enable_wowl, sizeof(enable_wowl))) {
-			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmEnableWowl, enable_wowl);
-			ADDPR(brcmfx_config).enable_wowl = (enable_wowl != 0);
-		}
-		else if (WIOKit::getOSDataValue(provider, Configuration::bootargBrcmEnableWowl, enable_wowl)) {
-			DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmEnableWowl, enable_wowl);
-			ADDPR(brcmfx_config).enable_wowl = (enable_wowl != 0);
-		}
+		ADDPR(brcmfx_config).readArguments(provider);
 	}
-
 	service_provider = provider;
 
 	UInt32 vendor, device;
@@ -161,41 +113,15 @@ void PCIHookManager::hookProvider(IOService *provider)
 			return;
 		}
 	}
-	
+
 	if (orgConfigRead16 == nullptr)
 		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead16, configRead16, &orgConfigRead16))
 			DBGLOG("BRCMFX", "PCIHookManager::hookProvider for configRead16 was successful");
-	
+
 	if (orgConfigRead32 == nullptr)
 		if (KernelPatcher::routeVirtual(provider, WIOKit::PCIConfigOffset::ConfigRead32, configRead32, &orgConfigRead32))
 			DBGLOG("BRCMFX", "PCIHookManager::hookProvider for configRead32 was successful");
 }
-
-//==============================================================================
-
-bool PCIHookManager::awaitPublishing(IORegistryEntry *obj)
-{
-	size_t counter = 0;
-	while (counter < 256) {
-		if (obj->inPlane(gIOServicePlane)) {
-			DBGLOG("BRCMFX", "pci device %s is in service plane %lu", safeString(obj->getName()), counter);
-			return true;
-		}
-		DBGLOG("BRCMFX", "pci device %s is not in service plane %lu, polling", safeString(obj->getName()), counter);
-		
-		if (obj->getProperty("IOPCIConfigured")) {
-			DBGLOG("dev", "pci bridge %s is configured %lu", safeString(obj->getName()), counter);
-			break;
-		}
-		DBGLOG("BRCMFX", "pci bridge %s is not configured %lu, polling", safeString(obj->getName()), counter);
-		++counter;
-		IOSleep(20);
-	}
-
-	SYSLOG("BRCMFX", "found dead pci device %s", safeString(obj->getName()));
-	return false;
-}
-
 
 //==============================================================================
 
@@ -253,6 +179,8 @@ IOService* FakeBrcm::probe(IOService * provider, SInt32 *score)
 	}
 	
 	DBGLOG("BRCMFX", "FakeBrcm::probe(): service provider is %s", safeString(provider->getName()));
+	
+	ADDPR(brcmfx_config).readArguments(provider);
 	
 	for (int i = 0; i < MaxServices; i++)
 	{

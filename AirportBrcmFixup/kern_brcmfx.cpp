@@ -35,11 +35,17 @@ bool BRCMFX::init()
 {
 	DBGLOG("BRCMFX", "init method is called");
 	callbackBRCMFX = this;
-	
+
 	lilu.onPatcherLoadForce(
 		[](void *user, KernelPatcher &patcher) {
 			callbackBRCMFX->processKernel(patcher);
 		}, this);
+
+	for (int i=0; i<MaxServices; ++i)
+	{
+		if (checkBrcmfxDriverValue(i, true) == -1)
+			kextList[i].switchOff();
+	}
 
 	lilu.onKextLoadForce(kextList, kextListSize,
 		[](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
@@ -114,12 +120,6 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 	DBGLOG("BRCMFX", "wlc_set_countrycode_rev%ld is called, a3 = %d, country_code = %s", index, a3, country_code);
 
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;
-	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
-	{
-		new_country_code = callbackBRCMFX->provider_country_code;
-		DBGLOG("BRCMFX", "country code is overrided in ioreg");
-	}
-
 	int64_t result = FunctionCast(wlc_set_countrycode_rev<index>, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
@@ -134,13 +134,7 @@ int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char 
 	int index = AirPort_Brcm4331;
 	DBGLOG("BRCMFX", "wlc_set_countrycode_rev_4331 is called, a4 = %d, country_code = %s", a4, country_code);
 	
-	const char *new_country_code = ADDPR(brcmfx_config).country_code;
-	if (!ADDPR(brcmfx_config).country_code_overrided && strlen(callbackBRCMFX->provider_country_code))
-	{
-		new_country_code = callbackBRCMFX->provider_country_code;
-		DBGLOG("BRCMFX", "country code is overrided in ioreg");
-	}
-	
+	const char *new_country_code = ADDPR(brcmfx_config).country_code;	
 	int64_t result = FunctionCast(wlc_set_countrycode_rev_4331, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
 	IOSleep(100);
@@ -172,26 +166,15 @@ int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
+	ADDPR(brcmfx_config).readArguments(provider);
 	
 	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
-	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
-		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
-	} else {
-		DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
-	}
-	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 		
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver) {
 		DBGLOG("BRCMFX", "start: disable service %s", safeString(service->getName()));
 		return nullptr;
-	}
-	
-	auto data = OSDynamicCast(OSData, provider->getProperty(Configuration::bootargBrcmCountry));
-	if (data) {
-		lilu_os_strncpy(callbackBRCMFX->provider_country_code, reinterpret_cast<const char*>(data->getBytesNoCopy()), data->getLength());
-		DBGLOG("BRCMFX", "%s in ioreg is set to %s", Configuration::bootargBrcmCountry, callbackBRCMFX->provider_country_code);
 	}
 	
 	auto name = safeString(provider->getName());
@@ -219,15 +202,11 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 IOService* BRCMFX::probe(IOService *service, IOService * provider, SInt32 *score)
 {
 	DBGLOG("BRCMFX", "probe is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
+	ADDPR(brcmfx_config).readArguments(provider);
+	
 	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
-	if (brcmfx_driver == -1 && WIOKit::getOSDataValue(provider, Configuration::bootargBrcmDriver, brcmfx_driver)) {
-		DBGLOG("BRCMFX", "%s in ioreg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
-    } else {
-		DBGLOG("BRCMFX", "%s in boot-arg is set to %d", Configuration::bootargBrcmDriver, brcmfx_driver);
-	}
-	brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
-	
+
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver) {
 		DBGLOG("BRCMFX", "probe: disable service %s", safeString(service->getName()));

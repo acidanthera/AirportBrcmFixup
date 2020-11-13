@@ -9,6 +9,7 @@
 #define kern_misc_hpp
 
 #include <Headers/kern_util.hpp>
+#include "kern_config.hpp"
 
 #define kCFBundleIdentifierKey					"CFBundleIdentifier"
 #define kCFBundleIdentifierKernelKey			"CFBundleIdentifierKernel"
@@ -79,7 +80,7 @@ inline int find_service_index(const char* service_name)
 
 inline int checkBrcmfxDriverValue(int brcmfx_driver, bool skip_log = false)
 {
-	if (brcmfx_driver != -1)
+	if (brcmfx_driver != -1 && !ADDPR(brcmfx_config).enable_all_drv)
 	{
 		if (getKernelVersion() <= KernelVersion::Sierra)
 		{

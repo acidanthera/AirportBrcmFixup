@@ -88,7 +88,6 @@ private:
 	IOCatalogue_removeDrivers removeDrivers {};
 	IOPCIDevice_setASPMState  setASPMState {};
 	
-	char provider_country_code[5] {""};
 	const char** cpmChanSwitchWhitelist {};
 	_Atomic(bool) atLeastOneServiceStarted = false;
 	IOWorkLoop *workLoop {};
