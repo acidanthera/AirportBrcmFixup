@@ -133,3 +133,6 @@ It can be used if you have masked pin 53 (CLKREQ#) and APSM L0|L1 is working.
 #### v2.1.2
 - Do not patch airport drivers missing in the system (set of available drivers depends on the system version). 
 For systems with manually added airport drivers this behaviour can be overridden by boot-arg or property `brcmfx-alldrv`
+
+#### v2.1.3
+- Added constants for 12.0 support
