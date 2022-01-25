@@ -136,3 +136,7 @@ For systems with manually added airport drivers this behaviour can be overridden
 
 #### v2.1.3
 - Added constants for macOS 12 support
+
+#### v2.1.4
+- boot-arg and property `brcmfx-delay` (Number) delays start of native broadcom driver for specified amount of milliseconds. Can be required for successful start in
+macOS Monterey 12.1 and newer versions. 

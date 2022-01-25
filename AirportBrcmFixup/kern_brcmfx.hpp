@@ -8,12 +8,12 @@
 #ifndef kern_brcmfx_hpp
 #define kern_brcmfx_hpp
 
-#include <Headers/kern_patcher.hpp>
-#include <stdatomic.h>
-#include <IOKit/IOService.h>
-
 #include "kern_misc.hpp"
 
+#include <Headers/kern_patcher.hpp>
+#include <stdatomic.h>
+
+#include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
 
 
@@ -72,8 +72,8 @@ private:
 	static int64_t          wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char *country_code, int a4);
 	
 	template <size_t index>
-	static int32_t 			siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
-	
+	static int64_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
+
 	/**
 	 *  Trampolines for original method invocations
 	 */

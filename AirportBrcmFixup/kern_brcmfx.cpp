@@ -5,12 +5,10 @@
 //  Copyright © 2017 lvs1974. All rights reserved.
 //
 
-#include <Headers/kern_api.hpp>
-
+#include "kern_api.hpp"
 #include "kern_config.hpp"
 #include "kern_brcmfx.hpp"
 #include "kern_fakebrcm.hpp"
-#include "plugin_start.hpp"
 
 #include <IOKit/IOCatalogue.h>
 #include <IOKit/IOTimerEventSource.h>
@@ -122,8 +120,8 @@ int64_t BRCMFX::wlc_set_countrycode_rev(int64_t a1, const char *country_code, in
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;
 	int64_t result = FunctionCast(wlc_set_countrycode_rev<index>, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
-	IOSleep(100);
-	
+	IOSleep(300);
+
 	return result;
 }
 
@@ -133,12 +131,12 @@ int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char 
 {
 	int index = AirPort_Brcm4331;
 	DBGLOG("BRCMFX", "wlc_set_countrycode_rev_4331 is called, a4 = %d, country_code = %s", a4, country_code);
-	
+
 	const char *new_country_code = ADDPR(brcmfx_config).country_code;	
 	int64_t result = FunctionCast(wlc_set_countrycode_rev_4331, callbackBRCMFX->orgWlcSetCountryCodeRev[index])(a1, a2, new_country_code, -1);
 	DBGLOG("BRCMFX", "country code is changed from %s to %s, result = %lld", country_code, new_country_code, result);
-	IOSleep(100);
-	
+	IOSleep(300);
+
 	return result;
 }
 
@@ -148,16 +146,16 @@ int64_t BRCMFX::wlc_set_countrycode_rev_4331(int64_t a1, int64_t a2, const char 
 // In 10.12 and earlier _si_pmu_fvco_pllreg will fail if the value stored at [rdi+0x3c] is not 0xaa52, driver won't be loaded
 
 template <size_t index>
-int32_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
+int64_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 {
 	uint32_t original = a1[15];
 	a1[15] = 0xaa52;
-	
+
 	DBGLOG("BRCMFX", "siPmuFvcoPllreg%ld, original chip identificator = %04x", index, original);
 	auto ret = FunctionCast(siPmuFvcoPllreg<index>, callbackBRCMFX->orgSiPmuFvcoPllreg[index])(a1, a2, a3);
-	
+
 	a1[15] = original;
-	
+
 	return ret;
 }
 
@@ -167,7 +165,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 {
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
 	ADDPR(brcmfx_config).readArguments(provider);
-	
+
 	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
 		
@@ -176,13 +174,13 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 		DBGLOG("BRCMFX", "start: disable service %s", safeString(service->getName()));
 		return nullptr;
 	}
-	
+
 	auto name = safeString(provider->getName());
 	
 	// There could be only one ARPT
 	if (!name || strcmp(name, "ARPT") != 0)
 		WIOKit::renameDevice(provider, "ARPT");
-	
+
 	PCIHookManager::hookProvider(provider);
 	if (ADDPR(brcmfx_config).override_aspm && callbackBRCMFX->setASPMState) {
 		IOReturn result = callbackBRCMFX->setASPMState(provider, provider, ADDPR(brcmfx_config).brcmfx_aspm);
@@ -190,10 +188,21 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 			SYSLOG("BRCMFX", "setASPMState has failed with code 0x%x", result);
 	}
 
-	bool result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
-	DBGLOG("BRCMFX", "start is finished with result %d", result);
-	if (result)
-		callbackBRCMFX->atLeastOneServiceStarted = true;
+	static _Atomic(bool) start_called[MaxServices] = {};
+	bool result = false;
+	if (!start_called[index])
+	{
+		start_called[index] = true;
+		IOSleep(ADDPR(brcmfx_config).start_delay);
+		result = FunctionCast(start, callbackBRCMFX->orgStart[index])(service, provider);
+		DBGLOG("BRCMFX", "start is finished with result %d", result);
+		if (result)
+			callbackBRCMFX->atLeastOneServiceStarted = true;
+	}
+	else
+	{
+		SYSLOG("BRCMFX", "start was already called for service %s", safeString(service->getName()), safeString(provider->getName()));
+	}
 	return result;
 }
 
@@ -234,7 +243,7 @@ void BRCMFX::osl_panic(const char *format, ...)
 		// Ignore LPO panic!
 		return;
 	}
-	
+
 	char buf[0x800];
 	memset(buf, 0, sizeof(buf));
 	
@@ -242,7 +251,7 @@ void BRCMFX::osl_panic(const char *format, ...)
 	va_start(va, format);
 	vsnprintf(buf, sizeof(buf), format, va);
 	va_end(va);
-	
+
 	panic("\"%s\"@/BuildRoot/Library/Caches/com.apple.xbs/Sources/AirPortDriverBrcmNIC/AirPortDriverBrcmNIC-1241.31.1.9/src/shared/macosx_osl.cpp:2029", buf);
 }
 
@@ -290,14 +299,14 @@ void BRCMFX::processKernel(KernelPatcher &patcher)
 		if (!startMatching_symbol && !startMatching_dictionary)
 			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::startMatching method, error = %d", patcher.getError());
 	}
-	
+
 	if (!removeDrivers)
 	{
 		removeDrivers = reinterpret_cast<IOCatalogue_removeDrivers>(patcher.solveSymbol(KernelPatcher::KernelID, "__ZN11IOCatalogue13removeDriversEP12OSDictionaryb"));
 		if (!removeDrivers)
 			SYSLOG("BRCMFX", "Fail to resolve IOCatalogue::removeDrivers method, error = %d", patcher.getError());
 	}
-	
+
 	// Ignore all the errors for other processors
 	patcher.clearError();
 }
@@ -472,7 +481,7 @@ void BRCMFX::startMatching()
 			}
 		}
 	}
-	
+
 #ifdef DEBUG
 	for (int i=0; i < MaxServices; i++)
 	{
@@ -501,7 +510,7 @@ void BRCMFX::startMatching()
 		}
 	}
 #endif
-	
+
 	if (startMatching_symbol)
 	{
 		for (int i=0; i < MaxServices; i++)
@@ -521,7 +530,7 @@ void BRCMFX::startMatching()
 			}
 		}
 	}
-	
+
 	if (startMatching_dictionary)
 	{
 		OSDictionary* dict = OSDictionary::withCapacity(1);
@@ -538,7 +547,7 @@ void BRCMFX::startMatching()
 			OSSafeReleaseNULL(dict);
 		}
 	}
-	
+
 	IOSleep(200);
 	if (!atLeastOneServiceStarted && --matchingLeftAttemptCounter >= 0 && matchingTimer)
 	{

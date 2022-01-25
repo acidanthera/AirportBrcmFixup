@@ -69,6 +69,7 @@ void Configuration::readArguments(IOService* provider)
 		
 		if (PE_parse_boot_argn(bootargBrcmAspm, &brcmfx_aspm, sizeof(brcmfx_aspm)))
 			override_aspm = true;
+		PE_parse_boot_argn(bootargDelay, &start_delay, sizeof(start_delay));
 	}
 	else if (!config_is_ready)
 	{
@@ -87,17 +88,24 @@ void Configuration::readArguments(IOService* provider)
 			DBGLOG("BRCMFX", "%s in ioreg is set to %d", bootargBrcmAspm, brcmfx_aspm);
 			override_aspm = true;
 		}
+		
+		if (PE_parse_boot_argn(bootargDelay, &start_delay, sizeof(start_delay))) {
+			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", bootargDelay, start_delay);
+		} else if (WIOKit::getOSDataValue(provider, bootargDelay, start_delay)) {
+			DBGLOG("BRCMFX", "%s in ioreg is set to %d", bootargDelay, start_delay);
+		}
 
 		if (brcmfx_aspm != 0xFF)
 		{
 			uint16_t vendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
 			uint16_t deviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
 			uint16_t subSystemVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
+			bool     bcm4350  = (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b);
 			// change APSM flags if value has been forced or for Broadcom BCM4350 chipset
-			if (override_aspm || (vendorID == 0x14e4 && deviceID == 0x43a3 && subSystemVendorID != 0x106b))
+			if (override_aspm || bcm4350 || (getKernelVersion() >= KernelVersion::Monterey))
 			{
 				override_aspm = true;
-				DBGLOG("BRCMFX", "Configuration::readArguments: Broadcom BCM4350 chipset is detected, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
+				DBGLOG("BRCMFX", "Configuration::readArguments: override aspm, subsystem-vendor-id = 0x%04x, subsystem-id = 0x%04x",
 					   subSystemVendorID, pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID));
 				auto pci_aspm_default = OSDynamicCast(OSNumber, provider->getProperty("pci-aspm-default"));
 				if (pci_aspm_default == nullptr || pci_aspm_default->unsigned32BitValue() != brcmfx_aspm)

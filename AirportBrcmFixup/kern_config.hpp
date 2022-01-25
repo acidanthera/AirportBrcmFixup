@@ -25,6 +25,7 @@ public:
 	static constexpr const char *bootargBrcmCountry    {"brcmfx-country"};     // 5 Ghz patch - change default country
 	static constexpr const char *bootargBrcmDriver     {"brcmfx-driver"};
 	static constexpr const char *bootargBrcmAspm       {"brcmfx-aspm"};
+	static constexpr const char *bootargDelay          {"brcmfx-delay"};
 
 	/**
 	 *  Retrieve boot arguments
@@ -47,6 +48,8 @@ public:
 	bool enable_all_drv         {false};
 	
 	bool config_is_ready        {false};
+	
+	uint32_t start_delay        {0};
 
 	Configuration() = default;
 };

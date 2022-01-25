@@ -37,10 +37,12 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as BrcmWLFi
 - `brcmfx-country=XX` changes the country code to XX (US, CN, #a, ...), also can be injected via DSDT or Properties → DeviceProperties in bootloader
 - `brcmfx-aspm`  overrides value used for pci-aspm-default
 - `brcmfx-wowl` enables/disables WoWLAN patch
+- `brcmfx-delay` delays start of native broadcom driver for specified amount of milliseconds
 - `brcmfx-alldrv` allows patching for all supported drivers, disregarding current system version (see  `Matching device-id and kext name in different macOS versions`)
 - `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
 
 Possible values for brcmfx-aspm (and pci-aspm-default):
+- `0` disables ASPM
 - `kIOPCIExpressASPML0s` = 0x00000001,
 - `kIOPCIExpressASPML1` = 0x00000002,
 - `kIOPCIExpressCommonClk` = 0x00000040,
@@ -97,6 +99,12 @@ Possible values for brcmfx-aspm (and pci-aspm-default):
 - AirPortBrcmNIC-MFG: removed
 
 [11]
+- AirPortBrcm4360: removed
+- AirPortBrcm4331: removed
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
+- AirPortBrcmNIC-MFG: removed
+
+[12]
 - AirPortBrcm4360: removed
 - AirPortBrcm4331: removed
 - AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
