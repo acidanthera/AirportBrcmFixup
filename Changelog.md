@@ -97,9 +97,6 @@ _osl_panic for string "32KHz LPO Clock not running" does not produce panic in Ai
 #### v1.1.1
 - Cosmetic change
 
-#### v1.1.1
-- Cosmetic change
-
 #### v1.1.0
 - XCode 9 & Lilu 1.2.0 compatibility fixes (Lilu 1.2.0 is required)
 
