@@ -237,7 +237,7 @@ bool FakeBrcm::start(IOService *provider)
 
 	if (!ADDPR(startSuccess))
 	{
-		return nullptr;
+		return false;
 	}
 
 	if (ADDPR(brcmfx_config).disabled)

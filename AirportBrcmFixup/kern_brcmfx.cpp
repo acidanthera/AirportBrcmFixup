@@ -168,11 +168,11 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 
 	int index = find_service_index(safeString(service->getName()));
 	int brcmfx_driver = ADDPR(brcmfx_config).brcmfx_driver;
-		
+
 	bool disable_driver = (brcmfx_driver == -1 && index == AirPort_BrcmNIC_MFG) || (brcmfx_driver != -1 && brcmfx_driver != index);
 	if (index < 0 || disable_driver) {
 		DBGLOG("BRCMFX", "start: disable service %s", safeString(service->getName()));
-		return nullptr;
+		return false;
 	}
 
 	auto name = safeString(provider->getName());

@@ -1,5 +1,8 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.1.5
+- Fix compilation issues in Xcode 13.3.1
+
 #### v2.1.4
 - boot-arg and property `brcmfx-delay` (Number) delays start of native broadcom driver for specified amount of milliseconds. Can be required for successful start in macOS Monterey 12.1 and newer versions. 
 
