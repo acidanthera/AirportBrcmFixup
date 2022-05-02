@@ -16,7 +16,7 @@
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
 static const char *kextIOPCIFamilyPath = "/System/Library/Extensions/IOPCIFamily.kext/IOPCIFamily";
-static const size_t kextListSize {5};
+static const size_t kextListSize {MaxServices+1};
 static bool kext_handled[kextListSize] {};
 
 static KernelPatcher::KextInfo kextList[kextListSize] {
