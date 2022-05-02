@@ -107,7 +107,7 @@ Possible values for brcmfx-aspm (and pci-aspm-default):
 [12]
 - AirPortBrcm4360: removed
 - AirPortBrcm4331: removed
-- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400
+- AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400, kext is moved to the new location - IO80211FamilyLegacy.kext/Contents/PlugIns
 - AirPortBrcmNIC-MFG: removed
 
 Explanation in russian language: (https://applelife.ru/threads/airportbrcmfixup-lilu-plagin-s-naborom-patchej-dlja-wi-fi-kart-broadcom.2355103/page-16#post-751173)
