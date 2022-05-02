@@ -15,16 +15,16 @@
 
 // Only used in apple-driven callbacks
 static BRCMFX *callbackBRCMFX {nullptr};
-static const char *kextIOPCIFamilyPath[]   { "/System/Library/Extensions/IOPCIFamily.kext/IOPCIFamily" };
+static const char *kextIOPCIFamilyPath = "/System/Library/Extensions/IOPCIFamily.kext/IOPCIFamily";
 static const size_t kextListSize {5};
 static bool kext_handled[kextListSize] {};
 
 static KernelPatcher::KextInfo kextList[kextListSize] {
-	{ idList[0], &binList[0], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ idList[1], &binList[1], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ idList[2], &binList[2], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
-	{ idList[3], &binList[3], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
-	{"com.apple.iokit.IOPCIFamily", kextIOPCIFamilyPath, arrsize(kextIOPCIFamilyPath), {true}, {}, KernelPatcher::KextInfo::Unloaded}
+	{ idList[AirPort_BrcmNIC_MFG],  binList[AirPort_BrcmNIC_MFG], 1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ idList[AirPort_Brcm4360],     binList[AirPort_Brcm4360],    1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ idList[AirPort_BrcmNIC],      binList[AirPort_BrcmNIC],     2, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{ idList[AirPort_Brcm4331],     binList[AirPort_Brcm4331],    1, {true}, {}, KernelPatcher::KextInfo::Unloaded },
+	{"com.apple.iokit.IOPCIFamily", &kextIOPCIFamilyPath,         1, {true}, {}, KernelPatcher::KextInfo::Unloaded }
 };
 
 //==============================================================================
