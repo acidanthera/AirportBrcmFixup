@@ -1,7 +1,7 @@
 AirportBrcmFixup Changelog
 ============================
 #### v2.1.6
-- Added constants for macOS 13.0 support
+- Added constants for macOS 13 support
 
 #### v2.1.5
 - Fix compilation issues in Xcode 13.3.1
