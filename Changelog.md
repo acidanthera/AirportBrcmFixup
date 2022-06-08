@@ -1,5 +1,8 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.1.6
+- Added constants for macOS 13.0 support
+
 #### v2.1.5
 - Fix compilation issues in Xcode 13.3.1
 - Fix patching of AirPortBrcmNIC for Monterey (kext located in IO80211FamilyLegacy.kext/PlugIns)
