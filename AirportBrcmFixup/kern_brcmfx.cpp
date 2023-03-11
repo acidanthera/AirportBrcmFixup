@@ -165,7 +165,7 @@ template <size_t index>
 IOReturn BRCMFX::AirPort_BrcmNIC_setTX_NSS(void *that, OSObject *obj, apple80211_tx_nss_data *data)
 {
 	auto result = FunctionCast(AirPort_BrcmNIC_setTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_setTX_NSS[index])(that, obj, data);
-	DBGLOG("BRCMFX", "AirPort_BrcmNIC_::setTX_NSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
+	DBGLOG("BRCMFX", "AirPort_BrcmNIC::setTX_NSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
 	return result;
 }
 
@@ -498,6 +498,8 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 	// Ignore all the errors for other processors
 	patcher.clearError();
 }
+
+//==============================================================================
 
 void BRCMFX::startMatching()
 {
