@@ -162,9 +162,9 @@ int64_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 //==============================================================================
 
 template <size_t index>
-IOReturn BRCMFX::AirPort_BrcmNIC_setTX_NSS(OSObject *obj, apple80211_tx_nss_data *data)
+IOReturn BRCMFX::AirPort_BrcmNIC_setTX_NSS(void *that, OSObject *obj, apple80211_tx_nss_data *data)
 {
-	auto result = FunctionCast(AirPort_BrcmNIC_setTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_setTX_NSS[index])(obj, data);
+	auto result = FunctionCast(AirPort_BrcmNIC_setTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_setTX_NSS[index])(that, obj, data);
 	DBGLOG("BRCMFX", "AirPort_BrcmNIC_::setTX_NSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
 	return result;
 }
@@ -172,9 +172,9 @@ IOReturn BRCMFX::AirPort_BrcmNIC_setTX_NSS(OSObject *obj, apple80211_tx_nss_data
 //==============================================================================
 
 template <size_t index>
-IOReturn BRCMFX::AirPort_BrcmNIC_getTX_NSS(OSObject *obj, apple80211_tx_nss_data *data)
+IOReturn BRCMFX::AirPort_BrcmNIC_getTX_NSS(void *that, OSObject *obj, apple80211_tx_nss_data *data)
 {
-	auto result = FunctionCast(AirPort_BrcmNIC_getTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getTX_NSS[index])(obj, data);
+	auto result = FunctionCast(AirPort_BrcmNIC_getTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getTX_NSS[index])(that, obj, data);
 	DBGLOG("BRCMFX", "AirPort_BrcmNIC::getTX_NSS: result = 0x%x, version = %d, ess = %d", result, data->version, data->nss);
 	return result;
 }
@@ -182,9 +182,9 @@ IOReturn BRCMFX::AirPort_BrcmNIC_getTX_NSS(OSObject *obj, apple80211_tx_nss_data
 //==============================================================================
 
 template <size_t index>
-IOReturn BRCMFX::AirPort_BrcmNIC_getNSS(OSObject *obj, apple80211_nss_data *data)
+IOReturn BRCMFX::AirPort_BrcmNIC_getNSS(void *that, OSObject *obj, apple80211_nss_data *data)
 {
-	auto result = FunctionCast(AirPort_BrcmNIC_getNSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getNSS[index])(obj, data);
+	auto result = FunctionCast(AirPort_BrcmNIC_getNSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getNSS[index])(that, obj, data);
 	DBGLOG("BRCMFX", "AirPort_BrcmNIC::getNSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
 	return result;
 }

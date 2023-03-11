@@ -75,11 +75,11 @@ private:
 	static int64_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
 	
 	template <size_t index>
-	static IOReturn         AirPort_BrcmNIC_setTX_NSS(OSObject*, apple80211_tx_nss_data*);
+	static IOReturn         AirPort_BrcmNIC_setTX_NSS(void *that, OSObject*, apple80211_tx_nss_data*);
 	template <size_t index>
-	static IOReturn         AirPort_BrcmNIC_getTX_NSS(OSObject*, apple80211_tx_nss_data*);
+	static IOReturn         AirPort_BrcmNIC_getTX_NSS(void *that, OSObject*, apple80211_tx_nss_data*);
 	template <size_t index>
-	static IOReturn         AirPort_BrcmNIC_getNSS(OSObject*, apple80211_nss_data*);
+	static IOReturn         AirPort_BrcmNIC_getNSS(void *that, OSObject*, apple80211_nss_data*);
 
 	/**
 	 *  Trampolines for original method invocations
