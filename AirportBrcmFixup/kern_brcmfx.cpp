@@ -161,6 +161,36 @@ int64_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 
 //==============================================================================
 
+template <size_t index>
+IOReturn BRCMFX::AirPort_BrcmNIC_setTX_NSS(OSObject *obj, apple80211_tx_nss_data *data)
+{
+	auto result = FunctionCast(AirPort_BrcmNIC_setTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_setTX_NSS[index])(obj, data);
+	DBGLOG("BRCMFX", "AirPort_BrcmNIC_::setTX_NSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
+	return result;
+}
+
+//==============================================================================
+
+template <size_t index>
+IOReturn BRCMFX::AirPort_BrcmNIC_getTX_NSS(OSObject *obj, apple80211_tx_nss_data *data)
+{
+	auto result = FunctionCast(AirPort_BrcmNIC_getTX_NSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getTX_NSS[index])(obj, data);
+	DBGLOG("BRCMFX", "AirPort_BrcmNIC::getTX_NSS: result = 0x%x, version = %d, ess = %d", result, data->version, data->nss);
+	return result;
+}
+
+//==============================================================================
+
+template <size_t index>
+IOReturn BRCMFX::AirPort_BrcmNIC_getNSS(OSObject *obj, apple80211_nss_data *data)
+{
+	auto result = FunctionCast(AirPort_BrcmNIC_getNSS<index>, callbackBRCMFX->orgAirPort_BrcmNIC_getNSS[index])(obj, data);
+	DBGLOG("BRCMFX", "AirPort_BrcmNIC::getNSS: result = 0x%x, version = %d, nss = %d", result, data->version, data->nss);
+	return result;
+}
+
+//==============================================================================
+
 bool BRCMFX::start(IOService* service, IOService* provider)
 {
 	DBGLOG("BRCMFX", "start is called, service name is %s, provider name is %s", safeString(service->getName()), safeString(provider->getName()));
@@ -336,6 +366,27 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 		reinterpret_cast<mach_vm_address_t>(BRCMFX::checkBoardId<3>)
 	};
 	
+	static const mach_vm_address_t AirPort_BrcmNIC_setTX_NSS[MaxServices] {
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_setTX_NSS<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_setTX_NSS<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_setTX_NSS<2>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_setTX_NSS<3>)
+	};
+	
+	static const mach_vm_address_t AirPort_BrcmNIC_getTX_NSS[MaxServices] {
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getTX_NSS<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getTX_NSS<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getTX_NSS<2>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getTX_NSS<3>)
+	};
+	
+	static const mach_vm_address_t AirPort_BrcmNIC_getNSS[MaxServices] {
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getNSS<0>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getNSS<1>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getNSS<2>),
+		reinterpret_cast<mach_vm_address_t>(BRCMFX::AirPort_BrcmNIC_getNSS<3>)
+	};
+	
 	for (size_t i = 0; i < kextListSize; i++)
 	{
 		if (kextList[i].loadIndex == index && !kext_handled[i])
@@ -377,7 +428,11 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					// White list restriction patch
 					{symbolList[i][5], checkBoardId[i]},
 					// Disable "32KHz LPO Clock not running" panic in AirPort_BrcmXXX
-					{symbolList[i][6], osl_panic}
+					{symbolList[i][6], osl_panic},
+					// Investigate issues with NSS
+					{symbolList[i][9],  AirPort_BrcmNIC_setTX_NSS[i], orgAirPort_BrcmNIC_setTX_NSS[i]},
+					{symbolList[i][10], AirPort_BrcmNIC_getTX_NSS[i], orgAirPort_BrcmNIC_getTX_NSS[i]},
+					{symbolList[i][11], AirPort_BrcmNIC_getNSS[i],    orgAirPort_BrcmNIC_getNSS[i]},
 				};
 
 				if (!patcher.routeMultiple(index, requests, address, size))

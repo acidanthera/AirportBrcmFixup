@@ -1,5 +1,9 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.1.7
+- Override methods AirPort_BrcmNIC::setTX_NSS, AirPort_BrcmNIC::getTX_NSS and AirPort_BrcmNIC::getNSS to investigate NSS issues. 
+  Original method is called, and debug version of kext (with boot-arg -brcmfxdbg) prints info into log
+
 #### v2.1.6
 - Added constants for macOS 13 support
 

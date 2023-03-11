@@ -35,6 +35,7 @@ static const char *idList[MaxServices] {
 	"com.apple.driver.AirPort.Brcm4360",
 	"com.apple.driver.AirPort.BrcmNIC",
 	"com.apple.driver.AirPort.Brcm4331"
+	"com.apple.driver.AirPort.Brcm4331"
 };
 
 static const char *binList[MaxServices][2] {
@@ -44,22 +45,22 @@ static const char *binList[MaxServices][2] {
 	{"/System/Library/Extensions/IO80211Family.kext/Contents/PlugIns/AirPortBrcm4331.kext/Contents/MacOS/AirPortBrcm4331", ""}
 };
 
-static const char *symbolList[MaxServices][9] {
+static const char *symbolList[MaxServices][12] {
 	{"__ZN19AirPort_BrcmNIC_MFG5startEP9IOService",     "__ZN19AirPort_BrcmNIC_MFG5probeEP9IOServicePi", "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
 	 "__ZNK19AirPort_BrcmNIC_MFG15newVendorStringEv",   "__ZN19AirPort_BrcmNIC_MFG12checkBoardIdEPKc",   nullptr,
-	 "__ZN19AirPort_BrcmNIC_MFG18wowCapablePlatformEv", "_wlc_wowl_enable" },
+	 "__ZN19AirPort_BrcmNIC_MFG18wowCapablePlatformEv", "_wlc_wowl_enable", nullptr, nullptr, nullptr },
 	
 	{"__ZN16AirPort_Brcm43605startEP9IOService",        "__ZN16AirPort_Brcm43605probeEP9IOServicePi" ,   "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
 	 "__ZNK16AirPort_Brcm436015newVendorStringEv",      "__ZN16AirPort_Brcm436012checkBoardIdEPKc",      nullptr,
-	 "__ZN16AirPort_Brcm436018wowCapablePlatformEv",    "_wlc_wowl_enable" },
+	 "__ZN16AirPort_Brcm436018wowCapablePlatformEv",    "_wlc_wowl_enable", nullptr, nullptr, nullptr },
 	
 	{"__ZN15AirPort_BrcmNIC5startEP9IOService",         "__ZN15AirPort_BrcmNIC5probeEP9IOServicePi",     "_si_pmu_fvco_pllreg",  "_wlc_set_countrycode_rev",
 	 "__ZNK15AirPort_BrcmNIC15newVendorStringEv",       "__ZN15AirPort_BrcmNIC12checkBoardIdEPKc",       "_osl_panic",
-	 "__ZN15AirPort_BrcmNIC18wowCapablePlatformEv",     "_wlc_wowl_enable" },
+	 "__ZN15AirPort_BrcmNIC18wowCapablePlatformEv",     "_wlc_wowl_enable" , "__ZN15AirPort_BrcmNIC9setTX_NSSEP8OSObjectP22apple80211_tx_nss_data", "__ZN15AirPort_BrcmNIC9getTX_NSSEP8OSObjectP22apple80211_tx_nss_data", "__ZN15AirPort_BrcmNIC6getNSSEP8OSObjectP19apple80211_nss_data" },
 	
 	{"__ZN16AirPort_Brcm43315startEP9IOService",        "__ZN16AirPort_Brcm43315probeEP9IOServicePi",    nullptr,                "_wlc_set_countrycode_rev",
 	 "__ZNK16AirPort_Brcm433115newVendorStringEv",       nullptr,                                        nullptr,
-	 "__ZN16AirPort_Brcm433118wowCapablePlatformEv",    "_wlc_wowl_enable"   }
+	 "__ZN16AirPort_Brcm433118wowCapablePlatformEv",    "_wlc_wowl_enable", nullptr, nullptr, nullptr  }
 };
 
 /**
@@ -113,5 +114,17 @@ inline int checkBrcmfxDriverValue(int brcmfx_driver, bool skip_log = false)
 	
 	return brcmfx_driver;
 }
+
+struct PACKED apple80211_tx_nss_data
+{
+	uint32_t    version;
+	uint8_t     nss;
+};
+
+struct PACKED apple80211_nss_data
+{
+	uint32_t    version;
+	uint8_t     nss;
+};
 
 #endif /* kern_misc_hpp */

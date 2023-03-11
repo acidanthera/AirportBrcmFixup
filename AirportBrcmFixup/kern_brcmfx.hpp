@@ -73,6 +73,13 @@ private:
 	
 	template <size_t index>
 	static int64_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
+	
+	template <size_t index>
+	static IOReturn         AirPort_BrcmNIC_setTX_NSS(OSObject*, apple80211_tx_nss_data*);
+	template <size_t index>
+	static IOReturn         AirPort_BrcmNIC_getTX_NSS(OSObject*, apple80211_tx_nss_data*);
+	template <size_t index>
+	static IOReturn         AirPort_BrcmNIC_getNSS(OSObject*, apple80211_nss_data*);
 
 	/**
 	 *  Trampolines for original method invocations
@@ -81,6 +88,9 @@ private:
 	mach_vm_address_t orgProbe[MaxServices] {};
 	mach_vm_address_t orgWlcSetCountryCodeRev[MaxServices] {};
 	mach_vm_address_t orgSiPmuFvcoPllreg[MaxServices] {};
+	mach_vm_address_t orgAirPort_BrcmNIC_setTX_NSS[MaxServices] {};
+	mach_vm_address_t orgAirPort_BrcmNIC_getTX_NSS[MaxServices] {};
+	mach_vm_address_t orgAirPort_BrcmNIC_getNSS[MaxServices] {};
 	
 	// access to IOCatalogue methods
 	IOCatalogue_startMatching_symbol startMatching_symbol {};
