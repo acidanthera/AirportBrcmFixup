@@ -74,12 +74,16 @@ private:
 	template <size_t index>
 	static int64_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
 	
+#ifdef DEBUG
 	template <size_t index>
 	static IOReturn         AirPort_BrcmNIC_setTX_NSS(void *that, OSObject*, apple80211_tx_nss_data*);
 	template <size_t index>
 	static IOReturn         AirPort_BrcmNIC_getTX_NSS(void *that, OSObject*, apple80211_tx_nss_data*);
 	template <size_t index>
 	static IOReturn         AirPort_BrcmNIC_getNSS(void *that, OSObject*, apple80211_nss_data*);
+	template <size_t index>
+	static int64_t          wlc_ratespec_nss(int a1);
+#endif
 
 	/**
 	 *  Trampolines for original method invocations
@@ -88,9 +92,13 @@ private:
 	mach_vm_address_t orgProbe[MaxServices] {};
 	mach_vm_address_t orgWlcSetCountryCodeRev[MaxServices] {};
 	mach_vm_address_t orgSiPmuFvcoPllreg[MaxServices] {};
+	
+#ifdef DEBUG
 	mach_vm_address_t orgAirPort_BrcmNIC_setTX_NSS[MaxServices] {};
 	mach_vm_address_t orgAirPort_BrcmNIC_getTX_NSS[MaxServices] {};
 	mach_vm_address_t orgAirPort_BrcmNIC_getNSS[MaxServices] {};
+	mach_vm_address_t orgWlcRatespecNss[MaxServices] {};
+#endif
 	
 	// access to IOCatalogue methods
 	IOCatalogue_startMatching_symbol startMatching_symbol {};
