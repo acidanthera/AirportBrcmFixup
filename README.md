@@ -121,6 +121,7 @@ Possible values for brcmfx-aspm (and pci-aspm-default):
 - AirPortBrcm4331: removed
 - AirPortBrcmNIC: removed
 - AirPortBrcmNIC-MFG: removed
+Use with OCLP  
 
 Explanation in russian language: (https://applelife.ru/threads/airportbrcmfixup-lilu-plagin-s-naborom-patchej-dlja-wi-fi-kart-broadcom.2355103/page-16#post-751173)
 
