@@ -1,5 +1,8 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.1.9
+- Added constants for macOS 15 support
+
 #### v2.1.8
 - Added constants for macOS 14 support for use with OCLP
 
