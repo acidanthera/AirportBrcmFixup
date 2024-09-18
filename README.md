@@ -116,7 +116,7 @@ Possible values for brcmfx-aspm (and pci-aspm-default):
 - AirPortBrcmNIC: 43ba, 43a3, 43a0, IOProbeScore = 1400, kext is moved to the new location - IO80211FamilyLegacy.kext/Contents/PlugIns
 - AirPortBrcmNIC-MFG: removed
 
-[14]
+[14+]
 - AirPortBrcm4360: removed
 - AirPortBrcm4331: removed
 - AirPortBrcmNIC: removed
