@@ -1,7 +1,7 @@
 AirportBrcmFixup
 ==================
 
-[![Build Status](https://github.com/acidanthera/AirportBrcmFixup/workflows/CI/badge.svg?branch=master)](https://github.com/acidanthera/AirportBrcmFixup/actions) [![Scan Status](https://scan.coverity.com/projects/16401/badge.svg?flat=1)](https://scan.coverity.com/projects/16401)
+[![Build Status](https://github.com/acidanthera/AirportBrcmFixup/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/acidanthera/AirportBrcmFixup/actions) [![Scan Status](https://scan.coverity.com/projects/16401/badge.svg?flat=1)](https://scan.coverity.com/projects/16401)
 
 An open source kernel extension providing a set of patches required for non-native Airport Broadcom Wi-Fi cards.
 
