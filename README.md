@@ -28,7 +28,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as AirportB
 
 #### Boot-args
 - `-brcmfxdbg` turns on debugging output
-- `-brcmfxbeta` enables loading on unsupported osx
+- `-brcmfxbeta` enables loading on unsupported macOS
 - `-brcmfxoff` disables kext loading
 - `-brcmfxwowl` enables WOWL (WoWLAN) - it is disabled by default
 - `-brcmfx-alldrv` allows patching for all supported drivers, disregarding current system version (see  `Matching device-id and kext name in different macOS versions`)
