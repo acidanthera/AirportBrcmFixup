@@ -1,5 +1,8 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.2.0
+- Added constants for macOS 26 support
+
 #### v2.1.9
 - Added constants for macOS 15 support
 

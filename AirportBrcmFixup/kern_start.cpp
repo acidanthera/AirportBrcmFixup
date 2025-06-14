@@ -170,7 +170,7 @@ PluginConfiguration ADDPR(config) {
 	bootargDebug, arrsize(bootargDebug),
 	bootargBeta, arrsize(bootargBeta),
 	KernelVersion::MountainLion,
-	KernelVersion::Sequoia,
+	KernelVersion::Tahoe,
 	[]() {
 		ADDPR(brcmfx_config).readArguments();
 		brcmfx.init();
