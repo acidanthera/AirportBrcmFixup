@@ -160,6 +160,18 @@ int64_t BRCMFX::siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3)
 }
 
 
+
+//==============================================================================
+// Correct only the cold-boot call that constrains the known 2x2 card to TX chain 1.
+uint64_t BRCMFX::wlc_stf_txchain_set(void *wlc, uint64_t chain, uint64_t arg3, uint64_t reason)
+{
+	if (ADDPR(brcmfx_config).enable_nss2 && reason == 2 && (chain & 0xFF) == 1) {
+		DBGLOG("BRCMFX", "AutoNSS2: wlc_stf_txchain_set reason=2 chain 1 -> 3");
+		chain = (chain & ~0xFFULL) | 0x3;
+	}
+
+	return FunctionCast(wlc_stf_txchain_set, callbackBRCMFX->orgWlcStfTxchainSet)(wlc, chain, arg3, reason);
+}
 #ifdef DEBUG
 //==============================================================================
 
@@ -476,6 +488,18 @@ void BRCMFX::processKext(KernelPatcher &patcher, size_t index, mach_vm_address_t
 					SYSLOG("BRCMFX", "at least one basic patch is failed, error = %d", patcher.getError());
 				else
 					DBGLOG("BRCMFX", "all patches are successfuly applied to %s", idList[i]);
+
+				if (i == AirPort_BrcmNIC) {
+					patcher.clearError();
+					KernelPatcher::RouteRequest nss2Request[] {
+						{"_wlc_stf_txchain_set", reinterpret_cast<mach_vm_address_t>(BRCMFX::wlc_stf_txchain_set), orgWlcStfTxchainSet}
+					};
+					if (!patcher.routeMultiple(index, nss2Request, address, size))
+						SYSLOG("BRCMFX", "AutoNSS2 route failed, error = %d", patcher.getError());
+					else
+						DBGLOG("BRCMFX", "AutoNSS2 route installed");
+					patcher.clearError();
+				}
 				
 				if ((ADDPR(brcmfx_config).brcmfx_driver == -1 && i == AirPort_BrcmNIC_MFG) ||
 					(ADDPR(brcmfx_config).brcmfx_driver != -1 && ADDPR(brcmfx_config).brcmfx_driver != i))
