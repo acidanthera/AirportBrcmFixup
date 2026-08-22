@@ -26,6 +26,7 @@ public:
 	static constexpr const char *bootargBrcmDriver     {"brcmfx-driver"};
 	static constexpr const char *bootargBrcmAspm       {"brcmfx-aspm"};
 	static constexpr const char *bootargDelay          {"brcmfx-delay"};
+	static constexpr const char *bootargBrcmNss1       {"brcmfx-nss1"};      // =1 disables automatic NSS:2 correction
 
 	/**
 	 *  Retrieve boot arguments
@@ -44,6 +45,8 @@ public:
 
 	IOOptionBits brcmfx_aspm    {0};
 	bool override_aspm          {false};
+	bool force_nss1             {false};
+	bool enable_nss2            {false};
 	
 	bool enable_all_drv         {false};
 	
