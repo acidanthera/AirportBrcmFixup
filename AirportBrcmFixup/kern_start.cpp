@@ -66,6 +66,10 @@ void Configuration::readArguments(IOService* provider)
 
 		enable_wowl = checkKernelArgument("-brcmfxwowl") || checkKernelArgument(bootargBrcmEnableWowl);
 		enable_all_drv = checkKernelArgument(bootargBrcmAllDrv);
+
+		uint32_t nss1_value = 0;
+		if (PE_parse_boot_argn(bootargBrcmNss1, &nss1_value, sizeof(nss1_value)))
+			force_nss1 = (nss1_value != 0);
 		
 		if (PE_parse_boot_argn(bootargBrcmAspm, &brcmfx_aspm, sizeof(brcmfx_aspm)))
 			override_aspm = true;
@@ -89,10 +93,47 @@ void Configuration::readArguments(IOService* provider)
 			override_aspm = true;
 		}
 		
+		bool userAspmOverride = override_aspm;
+
 		if (PE_parse_boot_argn(bootargDelay, &start_delay, sizeof(start_delay))) {
 			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", bootargDelay, start_delay);
 		} else if (WIOKit::getOSDataValue(provider, bootargDelay, start_delay)) {
 			DBGLOG("BRCMFX", "%s in ioreg is set to %d", bootargDelay, start_delay);
+		}
+
+
+		// AutoNSS2/AutoASPM policy.
+		uint16_t autoVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigVendorID);
+		uint16_t autoDeviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigDeviceID);
+		uint16_t autoSubVendorID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemVendorID);
+		uint16_t autoSubDeviceID = pciDevice->configRead16(WIOKit::PCIRegister::kIOPCIConfigSubSystemID);
+
+		// Apple BCM94360CS2 / common BCM94360NG identity is 2x2:2.
+		enable_nss2 = !force_nss1 &&
+			autoVendorID == 0x14e4 && autoDeviceID == 0x43a0 &&
+			autoSubVendorID == 0x106b && autoSubDeviceID == 0x0117;
+
+		if (enable_nss2)
+			DBGLOG("BRCMFX", "AutoNSS2: enabled for %04x:%04x subsystem %04x:%04x",
+				autoVendorID, autoDeviceID, autoSubVendorID, autoSubDeviceID);
+		else if (force_nss1)
+			DBGLOG("BRCMFX", "AutoNSS2: disabled by brcmfx-nss1=1");
+
+		// Explicit brcmfx-aspm always wins over automatic selection.
+		if (!userAspmOverride && autoVendorID == 0x14e4 && autoDeviceID == 0x43a0) {
+			if (autoSubVendorID == 0x106b) {
+				// Apple-subsystem BCM4360 identity: preserve platform ASPM (0xFF sentinel).
+				brcmfx_aspm = 0xFF;
+				override_aspm = false;
+				DBGLOG("BRCMFX", "AutoASPM: preserving platform ASPM for subsystem %04x:%04x",
+					autoSubVendorID, autoSubDeviceID);
+			} else {
+				// Non-Apple BCM4360 identity: L1 + CLKREQ (2 + 256 = 258).
+				brcmfx_aspm = 0x102;
+				override_aspm = true;
+				DBGLOG("BRCMFX", "AutoASPM: using 258 (L1+CLKREQ) for subsystem %04x:%04x",
+					autoSubVendorID, autoSubDeviceID);
+			}
 		}
 
 		if (brcmfx_aspm != 0xFF)
@@ -170,7 +211,7 @@ PluginConfiguration ADDPR(config) {
 	bootargDebug, arrsize(bootargDebug),
 	bootargBeta, arrsize(bootargBeta),
 	KernelVersion::MountainLion,
-	KernelVersion::Tahoe,
+	KernelVersion::Sequoia,
 	[]() {
 		ADDPR(brcmfx_config).readArguments();
 		brcmfx.init();
