@@ -1,5 +1,5 @@
 **Taken From Release:**
-Bellow is a list of boot-args that may be used with this kext:**
+Bellow is a list of boot-args that may be used with this kext:
 
 brcmfx-nss1=1     = may be used to force NSS:1 (for testing purposes) 
 brcmfx-aspm       = (used to be needed to avoid this power management bug with c-state).
