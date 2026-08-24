@@ -1,4 +1,5 @@
-**AirportBrcmFixup with NSS:2 Cold Boot Patch:**
+**AirportBrcmFixup with NSS:2 Cold Boot Patch**
+
 Bellow is a list of boot-args that may be used with this kext:
 
 brcmfx-nss1=1     = may be used to force NSS:1 (for testing purposes) 
