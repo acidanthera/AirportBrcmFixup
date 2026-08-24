@@ -27,25 +27,9 @@ brcmfx-delay       = existing initialization delay option to improve Airplay con
 	•	16. Built safety into the source-patching scripts. The scripts verify expected source anchors, support a --check dry run, validate that all required code markers exist before writing anything, create backups, and refuse partial modifications. v5 additionally understands an already-v4-patched source tree and upgrades only the AutoASPM portion instead of forcing us to reconstruct the NSS work.
 So the current v5 behavior boils down nicely to:
 
-BCM4360 / 14e4:43a0
-│
-├── subsystem 106b:0117
-│     ├── AutoNSS2: ON
-│     └── AutoASPM: preserve platform
-│
-├── subsystem 106b:anything-else
-│     ├── AutoNSS2: OFF
-│     └── AutoASPM: preserve platform
-│
-├── non-106b subsystem
-│     ├── AutoNSS2: OFF
-│     └── AutoASPM: 258 (L1 + CLKREQ)
-│
-└── explicit brcmfx-aspm=
-      └── user value wins
 
-Other Broadcom device IDs
-└── stock AirportBrcmFixup ASPM behavior
+<img width="468" height="543" alt="image" src="https://github.com/user-attachments/assets/a8b1dddd-dca8-4aac-bf7f-b66920eabe3b" />
+
 
 The two substantial features added to AirportBrcmFixup are therefore AutoNSS2 and AutoASPM. Everything else done has been about making those two features correctly targeted, reversible, Release-capable, and more broadly compatible without blindly changing unrelated Broadcom hardware.
 
