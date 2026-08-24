@@ -1,10 +1,14 @@
 **Read Me:
 Bellow is a list of boot-args that may be used with this kext:**
 
-brcmfx-nss1=1     = may be used to force NSS:1 (for testing purposes) 
-brcmfx-aspm       = (used to be needed to avoid this power management bug with c-state). May still be applied manually if AutoASPM results aren't Satisfactory. 
-brcmfx-delay       = existing initialization delay option to improve Airplay connectivity. 
--brcmfxdbg         = Existing AirportBrcmFixup debug logging flag
+brcmfx-nss1=1 may be used to force NSS:1 (for testing purposes) 
+
+brcmfx-aspm = (used to be needed to avoid this power management bug with c-state). 
+ May still be applied manually if AutoASPM results aren't Satisfactory. 
+			 
+brcmfx-delay = existing initialization delay option to improve Airplay connectivity.
+
+-brcmfxdbg = Existing AirportBrcmFixup debug logging flag
 
 **Here’s the complete progression of changes made to this Kext so far:**
 
