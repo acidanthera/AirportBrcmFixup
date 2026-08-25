@@ -1,5 +1,8 @@
 AirportBrcmFixup Changelog
 ============================
+#### v2.2.1
+- Changed ASPM defaults to L1+CLK (0x102) on non-Apple BCM94360, thx @maddog860 
+
 #### v2.2.0
 - Added constants for macOS 26 support
 
