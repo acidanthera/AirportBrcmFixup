@@ -66,6 +66,8 @@ void Configuration::readArguments(IOService* provider)
 
 		enable_wowl = checkKernelArgument("-brcmfxwowl") || checkKernelArgument(bootargBrcmEnableWowl);
 		enable_all_drv = checkKernelArgument(bootargBrcmAllDrv);
+
+        PE_parse_boot_argn(bootargBrcmTxChain, &txchain, sizeof(txchain));
 		
 		if (PE_parse_boot_argn(bootargBrcmAspm, &brcmfx_aspm, sizeof(brcmfx_aspm)))
 			override_aspm = true;
@@ -114,6 +116,12 @@ void Configuration::readArguments(IOService* provider)
 		} else if (WIOKit::getOSDataValue(provider, bootargDelay, start_delay)) {
 			DBGLOG("BRCMFX", "%s in ioreg is set to %d", bootargDelay, start_delay);
 		}
+		
+		// Force BCM94360 core mask defaults to dual-core for maximum performance.
+		if (txchain < 0 && bcm94360)
+			txchain = 3;
+
+		DBGLOG("BRCMFX", "txchain is configured as %d for %04x:%04x", txchain, vendorID, deviceID);
 
 		if (brcmfx_aspm != 0xFF && override_aspm)
 		{

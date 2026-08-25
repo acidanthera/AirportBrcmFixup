@@ -19,6 +19,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as AirportB
 - Implements 5Ghz and country code patch (US by default)
 - Implements WOWL (WoWLAN) disabler (turned on by default) - no low speed after wake
 - Implements patch to disable LPO panic in AirPortBrcmNIC
+- Implements txchain match to enable full transmit power on BCM94360
 
 #### Installation types
 - Clover Airport Fix + AirportBrcmFixup
@@ -40,6 +41,7 @@ Note: ***Debug version of Lilu.kext should be put in the same folder as AirportB
 - `brcmfx-delay` delays start of native broadcom driver for specified amount of milliseconds. It can solve panics or missing wi-fi device in Monterey. You can start with 15 seconds (brcmfx-delay=15000) and successively reduce this value until you notice instability in boot.
 - `brcmfx-alldrv` allows patching for all supported drivers, disregarding current system version (see  `Matching device-id and kext name in different macOS versions`)
 - `brcmfx-driver=0|1|2|3` enables only one kext for loading, 0 - AirPortBrcmNIC-MFG, 1 - AirPortBrcm4360, 2 - AirPortBrcmNIC, 3 - AirPortBrcm4331, also can be injected via DSDT or Properties → DeviceProperties in bootloader
+- `brcmfx-txchain=2|3` changes tx chain core mask defaults in throttle mode 
 
 Possible values for brcmfx-aspm (and pci-aspm-default):
 - `0` disables ASPM

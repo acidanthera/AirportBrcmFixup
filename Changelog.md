@@ -1,7 +1,9 @@
 AirportBrcmFixup Changelog
 ============================
 #### v2.2.1
-- Changed ASPM defaults to L1+CLK (0x102) on non-Apple BCM94360, thx @maddog860 
+- Changed ASPM defaults to L1+CLK (0x102) on non-Apple BCM94360, thx @maddog860
+- Added `brcmfx-txchain=x` boot argument to configure TX chain core mask
+- Added `brcmfx-txchain=3` default for BCM94360, thx @maddog860
 
 #### v2.2.0
 - Added constants for macOS 26 support
