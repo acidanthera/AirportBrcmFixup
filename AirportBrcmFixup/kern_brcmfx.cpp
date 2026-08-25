@@ -256,7 +256,7 @@ bool BRCMFX::start(IOService* service, IOService* provider)
 	}
 	else
 	{
-		SYSLOG("BRCMFX", "start was already called for service %s", safeString(service->getName()), safeString(provider->getName()));
+		SYSLOG("BRCMFX", "start was already called for service %s provider %s", safeString(service->getName()), safeString(provider->getName()));
 	}
 	return result;
 }
