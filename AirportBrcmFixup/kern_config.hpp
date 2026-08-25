@@ -21,11 +21,12 @@ public:
 	static constexpr const char *bootargDebug          {"-brcmfxdbg"};
 	static constexpr const char *bootargBeta           {"-brcmfxbeta"};
 	static constexpr const char *bootargBrcmEnableWowl {"-brcmfx-wowl"};        // enable WOWL
-	static constexpr const char *bootargBrcmAllDrv     {"-brcmfx-alldrv"};	   // skip driver availability check (which drivers available in the current system)
-	static constexpr const char *bootargBrcmCountry    {"brcmfx-country"};     // 5 Ghz patch - change default country
+	static constexpr const char *bootargBrcmAllDrv     {"-brcmfx-alldrv"};      // skip driver availability check (which drivers available in the current system)
+	static constexpr const char *bootargBrcmCountry    {"brcmfx-country"};      // 5 Ghz patch - change default country
 	static constexpr const char *bootargBrcmDriver     {"brcmfx-driver"};
 	static constexpr const char *bootargBrcmAspm       {"brcmfx-aspm"};
 	static constexpr const char *bootargDelay          {"brcmfx-delay"};
+	static constexpr const char *bootargBrcmTxChain    {"brcmfx-txchain"};
 
 	/**
 	 *  Retrieve boot arguments
@@ -43,8 +44,9 @@ public:
 	int32_t brcmfx_driver       {-1};
 
 	IOOptionBits brcmfx_aspm    {0};
+	int32_t txchain             {-1};
 	bool override_aspm          {false};
-	
+
 	bool enable_all_drv         {false};
 	
 	bool config_is_ready        {false};

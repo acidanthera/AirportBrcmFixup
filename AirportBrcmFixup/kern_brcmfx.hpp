@@ -73,6 +73,7 @@ private:
 	
 	template <size_t index>
 	static int64_t          siPmuFvcoPllreg(uint32_t *a1, int64_t a2, int64_t a3);
+	static int              wlc_stf_txchain_set(void *wlc, int32_t chain, bool force, uint16_t id);
 	
 #ifdef DEBUG
 	template <size_t index>
@@ -92,6 +93,7 @@ private:
 	mach_vm_address_t orgProbe[MaxServices] {};
 	mach_vm_address_t orgWlcSetCountryCodeRev[MaxServices] {};
 	mach_vm_address_t orgSiPmuFvcoPllreg[MaxServices] {};
+	mach_vm_address_t orgWlcStfTxchainSet {};
 	
 #ifdef DEBUG
 	mach_vm_address_t orgAirPort_BrcmNIC_setTX_NSS[MaxServices] {};
