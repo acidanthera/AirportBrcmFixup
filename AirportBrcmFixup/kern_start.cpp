@@ -149,7 +149,7 @@ void Configuration::readArguments(IOService* provider)
 		brcmfx_driver = checkBrcmfxDriverValue(brcmfx_driver);
 
 		if (PE_parse_boot_argn(bootargBrcmCountry, country_code, sizeof(country_code))) {
-			DBGLOG("BRCMFX", "%s in boot-arg is set to %d", bootargBrcmCountry, country_code);
+			DBGLOG("BRCMFX", "%s in boot-arg is set to %s", bootargBrcmCountry, country_code);
 		} else {
 			auto data = OSDynamicCast(OSData, provider->getProperty(bootargBrcmCountry));
 			if (data) {
